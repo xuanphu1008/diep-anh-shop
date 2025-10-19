@@ -12,7 +12,7 @@ class Category {
     
     // Lấy tất cả danh mục
     public function getAllCategories() {
-        $sql = "SELECT * FROM categories WHERE deleted_at IS NULL AND status = 1 ORDER BY name ASC";
+        $sql = "SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY name ASC";
         return $this->db->fetchAll($sql);
     }
     
@@ -30,12 +30,13 @@ class Category {
     
     // Thêm danh mục
     public function addCategory($data) {
-        $sql = "INSERT INTO categories (name, slug, description, status) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO categories (name, slug, description, status, parent_id) VALUES (?, ?, ?, ?, ?)";
         $params = [
             $data['name'],
             $this->createSlug($data['name']),
             $data['description'] ?? '',
-            $data['status'] ?? 1
+            $data['status'] ?? 1,
+            $data['parent_id'] ?? null
         ];
         
         if ($this->db->query($sql, $params)) {
@@ -46,12 +47,13 @@ class Category {
     
     // Cập nhật danh mục
     public function updateCategory($id, $data) {
-        $sql = "UPDATE categories SET name = ?, slug = ?, description = ?, status = ? WHERE id = ?";
+        $sql = "UPDATE categories SET name = ?, slug = ?, description = ?, status = ?, parent_id = ? WHERE id = ?";
         $params = [
             $data['name'],
             $this->createSlug($data['name']),
             $data['description'] ?? '',
             $data['status'] ?? 1,
+            $data['parent_id'] ?? null,
             $id
         ];
         
@@ -59,6 +61,16 @@ class Category {
             return ['success' => true, 'message' => 'Cập nhật danh mục thành công'];
         }
         return ['success' => false, 'message' => 'Cập nhật danh mục thất bại'];
+    }
+
+    // Lấy danh sách dùng cho dropdown (bao gồm cả ẩn nếu cần)
+    public function getCategoriesForDropdown($includeDisabled = false) {
+        $sql = "SELECT id, name, parent_id FROM categories WHERE deleted_at IS NULL";
+        if (!$includeDisabled) {
+            $sql .= " AND status = 1";
+        }
+        $sql .= " ORDER BY name ASC";
+        return $this->db->fetchAll($sql);
     }
     
     // Xóa mềm danh mục

@@ -171,7 +171,7 @@ $pageTitle = 'Giỏ hàng - ' . SITE_NAME;
                                     data-price="<?php echo $item['final_price']; ?>">
                                     <td>
                                         <div style="display: flex; gap: 15px; align-items: center;">
-                                            <img src="<?php echo UPLOAD_URL . htmlspecialchars($item['image']); ?>" 
+                                            <img src="<?php echo getProductImage($item['image']); ?>" 
                                                  alt="<?php echo htmlspecialchars($item['name']); ?>" 
                                                  class="cart-item-image">
                                             <div>

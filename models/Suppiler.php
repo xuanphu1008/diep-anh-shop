@@ -1,23 +1,23 @@
 <?php
-class Supplier {
+class Suppiler {
     private $db;
     
     public function __construct() {
         $this->db = new Database();
     }
     
-    public function getAllSuppliers() {
-        $sql = "SELECT * FROM suppliers WHERE deleted_at IS NULL ORDER BY name ASC";
+    public function getAllSuppilers() {
+        $sql = "SELECT * FROM suppilers WHERE deleted_at IS NULL ORDER BY name ASC";
         return $this->db->fetchAll($sql);
     }
-    
-    public function getSupplierById($id) {
-        $sql = "SELECT * FROM suppliers WHERE id = ? AND deleted_at IS NULL";
+
+    public function getSuppilerById($id) {
+        $sql = "SELECT * FROM suppilers WHERE id = ? AND deleted_at IS NULL";
         return $this->db->fetchOne($sql, [$id]);
     }
     
-    public function addSupplier($data) {
-        $sql = "INSERT INTO suppliers (name, email, phone, address, status) VALUES (?, ?, ?, ?, ?)";
+    public function addSuppiler($data) {
+        $sql = "INSERT INTO suppilers (name, email, phone, address, status) VALUES (?, ?, ?, ?, ?)";
         $params = [
             $data['name'],
             $data['email'] ?? '',
@@ -31,9 +31,9 @@ class Supplier {
         }
         return ['success' => false, 'message' => 'Thêm nhà cung cấp thất bại'];
     }
-    
-    public function updateSupplier($id, $data) {
-        $sql = "UPDATE suppliers SET name = ?, email = ?, phone = ?, address = ?, status = ? WHERE id = ?";
+
+    public function updateSuppiler($id, $data) {
+        $sql = "UPDATE suppilers SET name = ?, email = ?, phone = ?, address = ?, status = ? WHERE id = ?";
         $params = [
             $data['name'],
             $data['email'] ?? '',
@@ -48,17 +48,17 @@ class Supplier {
         }
         return ['success' => false, 'message' => 'Cập nhật nhà cung cấp thất bại'];
     }
-    
-    public function deleteSupplier($id) {
-        $sql = "UPDATE suppliers SET deleted_at = NOW() WHERE id = ?";
+
+    public function deleteSuppiler($id) {
+        $sql = "UPDATE suppilers SET deleted_at = NOW() WHERE id = ?";
         if ($this->db->query($sql, [$id])) {
             return ['success' => true, 'message' => 'Xóa nhà cung cấp thành công'];
         }
         return ['success' => false, 'message' => 'Xóa nhà cung cấp thất bại'];
     }
-    
-    public function restoreSupplier($id) {
-        $sql = "UPDATE suppliers SET deleted_at = NULL WHERE id = ?";
+
+    public function restoreSuppiler($id) {
+        $sql = "UPDATE suppilers SET deleted_at = NULL WHERE id = ?";
         if ($this->db->query($sql, [$id])) {
             return ['success' => true, 'message' => 'Khôi phục nhà cung cấp thành công'];
         }

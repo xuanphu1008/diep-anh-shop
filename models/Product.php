@@ -26,6 +26,63 @@ class Product {
         
         return $this->db->fetchAll($sql);
     }
+
+    // Lấy sản phẩm cho admin với lọc, phân trang và sắp xếp
+    public function getAdminProducts($filters = [], $limit = 20, $offset = 0, $sort = 'p.created_at DESC') {
+        $sql = "SELECT p.*, c.name as category_name, s.name as supplier_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                LEFT JOIN suppliers s ON p.supplier_id = s.id 
+                WHERE p.deleted_at IS NULL";
+        $params = [];
+
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (p.name LIKE ? OR p.description LIKE ? OR p.slug LIKE ? )";
+            $kw = '%' . $filters['keyword'] . '%';
+            $params[] = $kw; $params[] = $kw; $params[] = $kw;
+        }
+
+        if (isset($filters['category_id']) && $filters['category_id'] !== '') {
+            $sql .= " AND p.category_id = ?";
+            $params[] = (int)$filters['category_id'];
+        }
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            if ($filters['status'] === 'active') $sql .= " AND p.is_active = 1";
+            if ($filters['status'] === 'inactive') $sql .= " AND p.is_active = 0";
+        }
+
+        $sql .= " ORDER BY " . $sort . " LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    // Đếm sản phẩm cho admin (với cùng filters)
+    public function countAdminProducts($filters = []) {
+        $sql = "SELECT COUNT(*) as total FROM products p WHERE p.deleted_at IS NULL";
+        $params = [];
+
+        if (!empty($filters['keyword'])) {
+            $sql .= " AND (p.name LIKE ? OR p.description LIKE ? OR p.slug LIKE ? )";
+            $kw = '%' . $filters['keyword'] . '%';
+            $params[] = $kw; $params[] = $kw; $params[] = $kw;
+        }
+
+        if (isset($filters['category_id']) && $filters['category_id'] !== '') {
+            $sql .= " AND p.category_id = ?";
+            $params[] = (int)$filters['category_id'];
+        }
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            if ($filters['status'] === 'active') $sql .= " AND p.is_active = 1";
+            if ($filters['status'] === 'inactive') $sql .= " AND p.is_active = 0";
+        }
+
+        $res = $this->db->fetchOne($sql, $params);
+        return $res['total'] ?? 0;
+    }
     
     // Lấy sản phẩm theo ID
     public function getProductById($id) {
@@ -97,7 +154,7 @@ class Product {
     }
     
     // Tìm kiếm sản phẩm
-    public function searchProducts($keyword, $categoryId = null, $minPrice = null, $maxPrice = null) {
+    public function searchProducts($keyword, $categoryId = null, $minPrice = null, $maxPrice = null, $limit = null) {
         $sql = "SELECT p.*, c.name as category_name 
                 FROM products p 
                 LEFT JOIN categories c ON p.category_id = c.id 
@@ -121,7 +178,22 @@ class Product {
             $params[] = $maxPrice;
         }
         
-        $sql .= " ORDER BY p.created_at DESC";
+        $sql .= " ORDER BY 
+                CASE 
+                    WHEN p.name LIKE ? THEN 1
+                    WHEN p.name LIKE ? THEN 2
+                    ELSE 3
+                END,
+                p.sold_quantity DESC,
+                p.created_at DESC";
+        
+        $params[] = "$keyword%";  // Bắt đầu bằng keyword
+        $params[] = "%$keyword%";  // Chứa keyword
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT ?";
+            $params[] = $limit;
+        }
         
         return $this->db->fetchAll($sql, $params);
     }

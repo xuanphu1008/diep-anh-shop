@@ -1,5 +1,6 @@
 <?php
-require_once 'models/News.php';
+require_once __DIR__ . '/../includes/Database.php';
+
 class News {
     public $db;
 
@@ -96,6 +97,26 @@ class News {
             return ['success' => true, 'message' => 'Khôi phục tin tức thành công'];
         }
         return ['success' => false, 'message' => 'Khôi phục tin tức thất bại'];
+    }
+    
+    public function getRelatedNews($currentId, $limit = 3) {
+        $sql = "SELECT n.*, u.username as author_name 
+                FROM news n 
+                LEFT JOIN users u ON n.author_id = u.id 
+                WHERE n.id != ? AND n.deleted_at IS NULL AND n.status = 1
+                ORDER BY n.created_at DESC 
+                LIMIT ?";
+        return $this->db->fetchAll($sql, [$currentId, $limit]);
+    }
+    
+    public function getPopularNews($limit = 5) {
+        $sql = "SELECT n.*, u.username as author_name 
+                FROM news n 
+                LEFT JOIN users u ON n.author_id = u.id 
+                WHERE n.deleted_at IS NULL AND n.status = 1
+                ORDER BY n.views DESC, n.created_at DESC 
+                LIMIT ?";
+        return $this->db->fetchAll($sql, [$limit]);
     }
     
     private function createSlug($string) {
