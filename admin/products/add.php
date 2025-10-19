@@ -4,16 +4,16 @@ require_once __DIR__ . '/../../includes/Database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../models/Product.php';
 require_once __DIR__ . '/../../models/Category.php';
-require_once __DIR__ . '/../../models/Supplier.php';
+require_once __DIR__ . '/../../models/Suppiler.php';
 
 requireStaff();
 
 $productModel = new Product();
 $categoryModel = new Category();
-$supplierModel = new Supplier();
+$suppilerModel = new Suppiler();
 
 $categories = $categoryModel->getAllCategories();
-$suppliers = $supplierModel->getAllSuppliers();
+$suppilers = $suppilerModel->getAllSuppilers();
 
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -53,9 +53,9 @@ include __DIR__ . '/../layout.php';
                         
                         <div class="form-group">
                             <label>Nhà cung cấp *</label>
-                            <select name="supplier_id" class="form-control" required>
+                            <select name="suppiler_id" class="form-control" required>
                                 <option value="">-- Chọn nhà cung cấp --</option>
-                                <?php foreach ($suppliers as $sup): ?>
+                                <?php foreach ($suppilers as $sup): ?>
                                 <option value="<?php echo $sup['id']; ?>"><?php echo htmlspecialchars($sup['name']); ?></option>
                                 <?php endforeach; ?>
                             </select>

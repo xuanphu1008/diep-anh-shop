@@ -16,18 +16,18 @@ if (!is_array($ids) || !$action) {
     exit;
 }
 
-$supplierModel = new Suppiler();
+$suppilerModel = new Suppiler();
 $success = true;
 foreach ($ids as $id) {
     $id = (int)$id;
     if ($action === 'bulk_delete') {
-        $result = $supplierModel->deleteSupplier($id);
+        $result = $suppilerModel->deleteSuppiler($id);
         $success = $success && $result['success'];
     } elseif ($action === 'bulk_activate') {
-        $result = $supplierModel->updateSupplier($id, ['status' => 1]);
+        $result = $suppilerModel->updateSuppiler($id, ['status' => 1]);
         $success = $success && $result['success'];
     } elseif ($action === 'bulk_deactivate') {
-        $result = $supplierModel->updateSupplier($id, ['status' => 0]);
+        $result = $suppilerModel->updateSuppiler($id, ['status' => 0]);
         $success = $success && $result['success'];
     }
 }
