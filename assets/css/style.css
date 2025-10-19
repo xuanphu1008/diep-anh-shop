@@ -882,3 +882,51 @@ textarea.form-control {
 
 .hide { display: none; }
 .show { display: block; }
+
+/* Admin panel specific styles */
+.admin-list .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.admin-list .admin-table th,
+.admin-list .admin-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    text-align: left;
+}
+.admin-list .admin-table th {
+    background: #fafafa;
+    font-weight: 600;
+}
+.admin-list .admin-table tr:hover td {
+    background: #fbfbfb;
+}
+
+.card-form {
+    background: #fff;
+    padding: 25px;
+    border: 1px solid var(--border-color);
+}
+
+.card-form h3 {
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.card-form .form-group {
+    margin-bottom: 15px;
+}
+
+.card-form .btn {
+    min-width: 120px;
+}
+
+@media (max-width: 900px) {
+    .content-grid.container {
+        grid-template-columns: 1fr !important;
+    }
+}

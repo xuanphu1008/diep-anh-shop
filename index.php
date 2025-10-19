@@ -3,6 +3,7 @@
 
 require_once 'config/config.php';
 require_once 'includes/Database.php';
+require_once 'includes/functions.php';
 require_once 'models/Product.php';
 require_once 'models/Category.php';
 require_once 'models/News.php';
@@ -43,7 +44,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
             <?php foreach ($banners as $banner): ?>
             <div class="banner-item">
                 <a href="<?php echo htmlspecialchars($banner['link']); ?>">
-                    <img src="<?php echo UPLOAD_URL . htmlspecialchars($banner['image']); ?>" 
+                    <img src="<?php echo getBannerImage($banner['image']); ?>" 
                          alt="<?php echo htmlspecialchars($banner['title']); ?>">
                 </a>
             </div>
@@ -85,7 +86,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                     <?php endif; ?>
                     
                     <a href="product-detail.php?slug=<?php echo $product['slug']; ?>">
-                        <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                        <img src="<?php echo getProductImage($product['image']); ?>" 
                              alt="<?php echo htmlspecialchars($product['name']); ?>" 
                              class="product-image">
                     </a>
@@ -137,7 +138,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                 <!-- Tương tự như Hot Products -->
                 <div class="product-card">
                     <a href="product-detail.php?slug=<?php echo $product['slug']; ?>">
-                        <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                        <img src="<?php echo getProductImage($product['image']); ?>" 
                              alt="<?php echo htmlspecialchars($product['name']); ?>" 
                              class="product-image">
                     </a>
@@ -180,7 +181,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                         -<?php echo round((($product['price'] - $product['discount_price']) / $product['price']) * 100); ?>%
                     </span>
                     <a href="product-detail.php?slug=<?php echo $product['slug']; ?>">
-                        <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                        <img src="<?php echo getProductImage($product['image']); ?>" 
                              alt="<?php echo htmlspecialchars($product['name']); ?>">
                     </a>
                     <div class="product-info">
@@ -212,7 +213,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                 <?php foreach ($latestNews as $news): ?>
                 <div class="news-card">
                     <a href="news-detail.php?slug=<?php echo $news['slug']; ?>">
-                        <img src="<?php echo UPLOAD_URL . htmlspecialchars($news['image']); ?>" 
+                        <img src="<?php echo getNewsImage($news['image']); ?>" 
                              alt="<?php echo htmlspecialchars($news['title']); ?>">
                     </a>
                     <div class="news-info">

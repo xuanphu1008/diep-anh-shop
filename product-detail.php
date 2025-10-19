@@ -243,19 +243,19 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
         <div class="product-detail">
             <!-- Hình ảnh sản phẩm -->
             <div class="product-images">
-                <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                <img src="<?php echo getProductImage($product['image']); ?>" 
                      alt="<?php echo htmlspecialchars($product['name']); ?>" 
                      class="main-image" id="mainImage">
                 
                 <div class="thumbnail-images">
-                    <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                    <img src="<?php echo getProductImage($product['image']); ?>" 
                          class="active" onclick="changeImage(this)">
                     <?php 
                     if ($product['images']) {
                         $images = json_decode($product['images'], true);
                         if ($images) {
                             foreach ($images as $img) {
-                                echo '<img src="' . UPLOAD_URL . htmlspecialchars($img) . '" onclick="changeImage(this)">';
+                                echo '<img src="' . getProductImage($img) . '" onclick="changeImage(this)">';
                             }
                         }
                     }
@@ -422,7 +422,7 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
                 <?php foreach ($relatedProducts as $rp): ?>
                 <div class="product-card">
                     <a href="product-detail.php?slug=<?php echo $rp['slug']; ?>">
-                        <img src="<?php echo UPLOAD_URL . htmlspecialchars($rp['image']); ?>" alt="<?php echo htmlspecialchars($rp['name']); ?>">
+                        <img src="<?php echo getProductImage($rp['image']); ?>" alt="<?php echo htmlspecialchars($rp['name']); ?>">
                     </a>
                     <div class="product-info">
                         <h3 class="product-name">

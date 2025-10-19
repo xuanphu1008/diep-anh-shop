@@ -288,7 +288,7 @@ $categories = $categoryModel->getAllCategories();
                             <?php endif; ?>
                             
                             <a href="product-detail.php?slug=<?php echo $product['slug']; ?>">
-                                <img src="<?php echo UPLOAD_URL . htmlspecialchars($product['image']); ?>" 
+                                <img src="<?php echo getProductImage($product['image']); ?>" 
                                      alt="<?php echo htmlspecialchars($product['name']); ?>" 
                                      class="product-image">
                             </a>

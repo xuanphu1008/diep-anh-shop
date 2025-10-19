@@ -1,0 +1,22 @@
+# .htaccess (root /diep-anh-shop) — chỉ phần rewrite + basic checks
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /diep-anh-shop/
+
+    # 1) Chỉ redirect trực tiếp các request client đến *.php sang URL không extension
+    #    Dùng THE_REQUEST để đảm bảo nội bộ rewrite (subrequest) không kích hoạt redirect.
+    RewriteCond %{THE_REQUEST} \s/([^\s?]+)\.php[^\s]*\s [NC]
+    RewriteRule ^ /%1 [R=301,L,QSA]
+
+    # 2) Nếu file hoặc thư mục tồn tại thì phục vụ thẳng (tránh rewrite)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 3) Nội bộ rewrite: nếu file không tồn tại nhưng file.php tồn tại thì phục vụ file.php
+    #    Bảo đảm không rewrite khi REQUEST_URI đã kết thúc bằng .php (tránh loop)
+    RewriteCond %{REQUEST_URI} !\.php$
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+</IfModule>
