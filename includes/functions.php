@@ -730,11 +730,28 @@ function formatSpecifications($specsJson) {
 /**
  * Get cart count
  */
+// Sửa lại hàm getCartCount() trong includes/functions.php (line 737)
+
 function getCartCount() {
     if (isLoggedIn()) {
-        require_once __DIR__ . '/../models/Cart.php';
-        $cart = new Cart();
-        return $cart->countCartItems($_SESSION['user_id']);
+        try {
+            require_once __DIR__ . '/../models/Cart.php';
+            $cart = new Cart();
+            
+            // Kiểm tra xem method có tồn tại không
+            if (method_exists($cart, 'countCartItems')) {
+                return $cart->countCartItems($_SESSION['user_id']);
+            } else {
+                // Fallback: Đếm trực tiếp từ database
+                $db = new Database();
+                $sql = "SELECT SUM(quantity) as total FROM cart WHERE user_id = ?";
+                $result = $db->fetchOne($sql, [$_SESSION['user_id']]);
+                return $result ? (int)$result['total'] : 0;
+            }
+        } catch (Exception $e) {
+            error_log("Cart count error: " . $e->getMessage());
+            return 0;
+        }
     } else {
         $cart = $_SESSION['cart'] ?? [];
         return array_sum($cart);

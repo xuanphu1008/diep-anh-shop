@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/Cart.php';
 require_once __DIR__ . '/../models/Order.php';
 require_once __DIR__ . '/../models/Coupon.php';
 require_once __DIR__ . '/../includes/VNPay.php';
+require_once __DIR__ . '/../models/User.php';
 
 requireLogin();
 

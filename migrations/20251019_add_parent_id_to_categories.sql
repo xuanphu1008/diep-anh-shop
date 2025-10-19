@@ -2,7 +2,7 @@
 -- Run in MySQL: mysql -u root -p diep_anh_shop < migrations/20251019_add_parent_id_to_categories.sql
 
 ALTER TABLE categories
-  ADD COLUMN parent_id INT NULL AFTER slug;
+  ADD (parent_id NUMBER);
 
 -- Optional foreign key (uncomment if desired and database supports it):
 -- ALTER TABLE categories

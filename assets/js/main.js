@@ -17,14 +17,6 @@ function initBannerSlider() {
     // Set initial active slide
     slides[0].classList.add('active');
     
-    // Tạo wrapper cho slides
-    const slidesWrapper = document.createElement('div');
-    slidesWrapper.className = 'slides-wrapper';
-    while (bannerSlider.firstChild) {
-        slidesWrapper.appendChild(bannerSlider.firstChild);
-    }
-    bannerSlider.appendChild(slidesWrapper);
-    
     // Tạo dots
     const dotsContainer = document.createElement('div');
     dotsContainer.className = 'slider-dots';
@@ -93,9 +85,8 @@ function goToSlide(n) {
     
     const slides = document.querySelectorAll('.banner-item');
     const dots = document.querySelectorAll('.slider-dots .dot');
-    const slidesWrapper = document.querySelector('.slides-wrapper');
     
-    if (!slidesWrapper || !slides.length) return;
+    if (!slides.length) return;
     
     isSliding = true;
     
@@ -160,15 +151,8 @@ function addSliderStyles() {
             position: relative;
             overflow: hidden;
             width: 100%;
-            aspect-ratio: 1200/594;
+            height: 400px;
             background: #f5f5f5;
-        }
-        .slides-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
         }
         .banner-item {
             position: absolute; 
@@ -237,37 +221,6 @@ function addSliderStyles() {
         }
         .slider-btn.next {
             right: 20px;
-        }
-        .slider-btn:hover {
-            background: rgba(0,0,0,0.8);
-        }
-        .slider-btn.prev {
-            left: 20px;
-        }
-        .slider-btn.next {
-            right: 20px;
-        }
-        .slider-dots {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-        .slider-dots .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.5);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .slider-dots .dot.active,
-        .slider-dots .dot:hover {
-            background: white;
-            transform: scale(1.2);
         }
     `;
     document.head.appendChild(style);
@@ -926,6 +879,12 @@ document.addEventListener('DOMContentLoaded', function() {
     initCountdown();
     initProductZoom();
     
+    // Update cart count chỉ khi có element cart-count
+    const cartCountElement = document.querySelector('.cart-count');
+    if (cartCountElement) {
+        updateCartCount();
+    }
+    
     // Close flash messages
     const closeButtons = document.querySelectorAll('.alert .close-btn');
     closeButtons.forEach(btn => {
@@ -991,3 +950,176 @@ window.diepanhShop = {
     copyToClipboard,
     showNotification
 };
+
+// Cart functions (imported from cart.js)
+function addToCart(productId) {
+    const quantityInput = document.getElementById('quantity');
+    const quantity = quantityInput ? quantityInput.value : 1;
+
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('product_id', productId);
+    formData.append('quantity', parseInt(quantity));
+
+    fetch('api/cart-handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', data.message);
+            updateCartCount();
+        } else {
+            showNotification('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'Có lỗi xảy ra khi thêm vào giỏ. Vui lòng thử lại!');
+    });
+}
+
+function buyNow(productId) {
+    const quantityInput = document.getElementById('quantity');
+    const quantity = quantityInput ? quantityInput.value : 1;
+
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('product_id', productId);
+    formData.append('quantity', parseInt(quantity));
+
+    fetch('api/cart-handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = 'customer/cart.php';
+        } else {
+            showNotification('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'Có lỗi xảy ra khi mua ngay. Vui lòng thử lại!');
+    });
+}
+
+function updateCartCount() {
+    // Chỉ gọi API nếu có element cart-count trên trang
+    const cartCountElement = document.querySelector('.cart-count');
+    if (!cartCountElement) {
+        return; // Không có element cart-count thì không cần gọi API
+    }
+    
+    fetch('api/cart-handler.php?action=count')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            cartCountElement.textContent = data.count;
+        }
+    })
+    .catch(error => {
+        // Không hiển thị lỗi cho người dùng, chỉ log
+        console.error('Error fetching cart count:', error);
+    });
+}
+
+function showNotification(type, message) {
+    const oldNotif = document.querySelector('.notification');
+    if (oldNotif) {
+        oldNotif.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                min-width: 300px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+            }
+            .notification-content {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .notification-content i {
+                font-size: 20px;
+            }
+            .notification-success {
+                background: #28a745;
+                color: white;
+            }
+            .notification-error {
+                background: #dc3545;
+                color: white;
+            }
+            .notification-warning {
+                background: #ffc107;
+                color: #333;
+            }
+            .notification-info {
+                background: #17a2b8;
+                color: white;
+            }
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'success': 'check-circle',
+        'error': 'exclamation-circle',
+        'warning': 'exclamation-triangle',
+        'info': 'info-circle'
+    };
+    return icons[type] || 'info-circle';
+}
+
+// Global functions for backward compatibility
+window.addToCart = addToCart;
+window.buyNow = buyNow;

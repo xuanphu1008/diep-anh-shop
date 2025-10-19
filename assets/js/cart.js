@@ -1,53 +1,56 @@
-// assets/js/cart.js - Quản lý giỏ hàng
+// assets/js/cart.js
 
 // Thêm sản phẩm vào giỏ hàng
 function addToCart(productId) {
-    const quantity = document.getElementById('quantity') ? document.getElementById('quantity').value : 1;
-    
+    const quantityInput = document.getElementById('quantity');
+    // Lấy số lượng từ input nếu tồn tại, mặc định là 1 nếu không có input (ví dụ: trang danh sách sản phẩm)
+    const quantity = quantityInput ? quantityInput.value : 1;
+
+    // Tạo FormData
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('product_id', productId);
+    formData.append('quantity', parseInt(quantity));
+
     fetch('api/cart-handler.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'add',
-            product_id: productId,
-            quantity: parseInt(quantity)
-        })
+        // Không cần 'Content-Type' header khi dùng FormData, trình duyệt tự xử lý
+        body: formData // Gửi dưới dạng form data
     })
-    .then(response => response.json())
+    .then(response => response.json()) // Vẫn mong đợi nhận về JSON
     .then(data => {
         if (data.success) {
             showNotification('success', data.message);
-            updateCartCount();
+            updateCartCount(); // Cập nhật số lượng trên icon giỏ hàng
         } else {
             showNotification('error', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('error', 'Có lỗi xảy ra. Vui lòng thử lại!');
+        showNotification('error', 'Có lỗi xảy ra khi thêm vào giỏ. Vui lòng thử lại!');
     });
 }
 
 // Mua ngay
 function buyNow(productId) {
-    const quantity = document.getElementById('quantity') ? document.getElementById('quantity').value : 1;
-    
+    const quantityInput = document.getElementById('quantity');
+    const quantity = quantityInput ? quantityInput.value : 1;
+
+    // Tạo FormData
+    const formData = new FormData();
+    formData.append('action', 'add'); // Hành động vẫn là 'add' để thêm vào giỏ trước khi chuyển trang
+    formData.append('product_id', productId);
+    formData.append('quantity', parseInt(quantity));
+
     fetch('api/cart-handler.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'add',
-            product_id: productId,
-            quantity: parseInt(quantity)
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Thêm thành công, chuyển đến trang giỏ hàng
             window.location.href = 'customer/cart.php';
         } else {
             showNotification('error', data.message);
@@ -55,91 +58,105 @@ function buyNow(productId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('error', 'Có lỗi xảy ra. Vui lòng thử lại!');
+        showNotification('error', 'Có lỗi xảy ra khi mua ngay. Vui lòng thử lại!');
     });
 }
 
-// Cập nhật số lượng trong giỏ hàng
+// --- Cập nhật các hàm khác nếu chúng cũng dùng JSON POST ---
+
+// Cập nhật số lượng trong giỏ hàng (Trang cart.php)
 function updateCartQuantity(productId, quantity) {
     if (quantity < 1) {
         if (confirm('Bạn muốn xóa sản phẩm này khỏi giỏ hàng?')) {
-            removeFromCart(productId);
+            removeFromCart(productId); // Gọi hàm xóa nếu số lượng < 1
+        } else {
+            // Nếu người dùng không muốn xóa, khôi phục lại giá trị input (cần cách lấy giá trị cũ)
+            // Hoặc đơn giản là reload trang để lấy lại giá trị đúng
+            location.reload();
         }
         return;
     }
-    
-    fetch('api/cart-handler.php', {
+
+    const formData = new FormData();
+    formData.append('action', 'update');
+    formData.append('product_id', productId);
+    formData.append('quantity', parseInt(quantity));
+
+    fetch('api/cart-handler.php', { // Đảm bảo URL đúng từ trang cart.php
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'update',
-            product_id: productId,
-            quantity: parseInt(quantity)
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Cập nhật thành công, reload lại trang để hiển thị đúng
             location.reload();
         } else {
             showNotification('error', data.message);
+            // Có thể cần khôi phục giá trị input về giá trị cũ nếu cập nhật thất bại
+            location.reload(); // Reload tạm thời
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('error', 'Có lỗi xảy ra. Vui lòng thử lại!');
+        showNotification('error', 'Có lỗi xảy ra khi cập nhật số lượng. Vui lòng thử lại!');
+        location.reload(); // Reload tạm thời
     });
 }
 
-// Xóa sản phẩm khỏi giỏ hàng
+// Xóa sản phẩm khỏi giỏ hàng (Trang cart.php)
 function removeFromCart(productId) {
-    if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-        return;
-    }
-    
-    fetch('api/cart-handler.php', {
+    // Không cần confirm nữa vì đã có trong hàm updateCartQuantity hoặc gọi trực tiếp từ nút xóa
+    // if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+    //     return;
+    // }
+
+    const formData = new FormData();
+    formData.append('action', 'remove');
+    formData.append('product_id', productId);
+
+    fetch('api/cart-handler.php', { // Đảm bảo URL đúng từ trang cart.php
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            action: 'remove',
-            product_id: productId
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showNotification('success', data.message);
-            location.reload();
+            location.reload(); // Reload lại trang giỏ hàng
         } else {
             showNotification('error', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('error', 'Có lỗi xảy ra. Vui lòng thử lại!');
+        showNotification('error', 'Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại!');
     });
 }
 
-// Cập nhật số lượng giỏ hàng trong header
-function updateCartCount() {
-    fetch('api/cart-handler.php?action=count')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const cartCountElement = document.querySelector('.cart-count');
-            if (cartCountElement) {
-                cartCountElement.textContent = data.count;
+
+// --- Các hàm còn lại (updateCartCount, applyCoupon, showNotification, ...) giữ nguyên ---
+// ... (Các hàm khác không thay đổi) ...
+
+// Cập nhật số lượng giỏ hàng trong header (chỉ khi chưa có hàm này)
+if (typeof updateCartCount === 'undefined') {
+    function updateCartCount() {
+        fetch('api/cart-handler.php?action=count') // GET request is fine here
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const cartCountElement = document.querySelector('.cart-count');
+                if (cartCountElement) {
+                    cartCountElement.textContent = data.count;
+                }
             }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+        })
+        .catch(error => {
+            console.error('Error fetching cart count:', error);
+        });
+    }
 }
+// ... (Phần còn lại của file cart.js)
 
 // Áp dụng mã giảm giá
 function applyCoupon() {
@@ -393,4 +410,47 @@ function decreaseCartQty(productId) {
         input.value = parseInt(input.value) - 1;
         updateCartQuantity(productId, input.value);
     }
+}
+// Thêm vào cuối file assets/js/cart.js
+
+function applyCoupon() {
+    const couponCode = document.getElementById('coupon_code').value.trim();
+    const btn = document.getElementById('apply-coupon-btn');
+    
+    if (!couponCode) {
+        alert('Vui lòng nhập mã giảm giá');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+    
+    fetch('../ajax/apply-coupon.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'coupon_code=' + encodeURIComponent(couponCode)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hiển thị giảm giá
+            document.getElementById('discount').textContent = data.discount_formatted;
+            document.getElementById('discount').setAttribute('data-value', data.discount);
+            document.getElementById('total').textContent = data.new_total_formatted;
+            
+            alert('Áp dụng mã giảm giá thành công!');
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra, vui lòng thử lại');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Áp dụng';
+    });
 }
