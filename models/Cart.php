@@ -58,7 +58,33 @@ class Cart {
     public function getSessionCart() {
         return $_SESSION['cart'] ?? [];
     }
-    
+
+    /**
+     * Lấy một item trong giỏ hàng
+     */
+    public function getCartItem($userId, $productId) {
+        $sql = "SELECT * FROM cart WHERE user_id = ? AND product_id = ?";
+        return $this->db->fetchOne($sql, [$userId, $productId]);
+    }
+
+    /**
+     * Cập nhật số lượng sản phẩm (alias của updateCartItem)
+     */
+    public function updateQuantity($userId, $productId, $quantity) {
+        if ($quantity <= 0) {
+            return $this->removeFromCart($userId, $productId);
+        }
+        
+        $sql = "UPDATE cart SET quantity = ?, updated_at = NOW() 
+                WHERE user_id = ? AND product_id = ?";
+        
+        if ($this->db->query($sql, [$quantity, $userId, $productId])) {
+            return ['success' => true, 'message' => 'Cập nhật số lượng thành công'];
+        } else {
+            return ['success' => false, 'message' => 'Cập nhật số lượng thất bại'];
+        }
+    }
+
     /**
      * Đếm số lượng items trong giỏ
      */
@@ -125,7 +151,11 @@ class Cart {
      */
     public function removeFromCart($userId, $productId) {
         $sql = "DELETE FROM cart WHERE user_id = ? AND product_id = ?";
-        return $this->db->query($sql, [$userId, $productId]);
+        if ($this->db->query($sql, [$userId, $productId])) {
+            return ['success' => true, 'message' => 'Đã xóa sản phẩm khỏi giỏ hàng'];
+        } else {
+            return ['success' => false, 'message' => 'Có lỗi xảy ra khi xóa sản phẩm'];
+        }
     }
     
     /**

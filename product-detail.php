@@ -473,6 +473,6 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
             }
         }
     </script>
-    <script src="assets/js/cart.js"></script>
+    <script src="assets/js/cart.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

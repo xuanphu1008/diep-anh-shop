@@ -355,6 +355,6 @@ $categories = $categoryModel->getAllCategories();
     </div>
     
     <?php include 'includes/footer.php'; ?>
-    <script src="assets/js/cart.js"></script>
+    <script src="assets/js/cart.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>
