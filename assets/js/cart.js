@@ -1,27 +1,47 @@
-// assets/js/cart.js
-
 // Thêm sản phẩm vào giỏ hàng
-function addToCart(productId) {
+window.addToCart = function(productId) {
     const quantityInput = document.getElementById('quantity');
-    // Lấy số lượng từ input nếu tồn tại, mặc định là 1 nếu không có input (ví dụ: trang danh sách sản phẩm)
-    const quantity = quantityInput ? quantityInput.value : 1;
+    let quantity = 1;
+    if (quantityInput && quantityInput.value) {
+        quantity = parseInt(quantityInput.value) || 1;
+    }
+
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
 
     // Tạo FormData
     const formData = new FormData();
     formData.append('action', 'add');
-    formData.append('product_id', productId);
-    formData.append('quantity', parseInt(quantity));
+    formData.append('product_id', parseInt(productId) || 0);
+    formData.append('quantity', quantity);
 
-    fetch('api/cart-handler.php', {
+    console.log('addToCart called with productId:', productId);
+    console.log('API path:', apiPath);
+    console.log('FormData:', {action: 'add', product_id: parseInt(productId), quantity: quantity});
+
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+    console.log('Full API path:', fullApiPath);
+
+    fetch(fullApiPath, {
         method: 'POST',
-        // Không cần 'Content-Type' header khi dùng FormData, trình duyệt tự xử lý
-        body: formData // Gửi dưới dạng form data
+        body: formData
     })
-    .then(response => response.json()) // Vẫn mong đợi nhận về JSON
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             showNotification('success', data.message);
-            updateCartCount(); // Cập nhật số lượng trên icon giỏ hàng
+            updateCartCount();
         } else {
             showNotification('error', data.message);
         }
@@ -30,20 +50,32 @@ function addToCart(productId) {
         console.error('Error:', error);
         showNotification('error', 'Có lỗi xảy ra khi thêm vào giỏ. Vui lòng thử lại!');
     });
-}
+};
 
 // Mua ngay
-function buyNow(productId) {
+window.buyNow = function(productId) {
     const quantityInput = document.getElementById('quantity');
-    const quantity = quantityInput ? quantityInput.value : 1;
+    let quantity = 1;
+    if (quantityInput && quantityInput.value) {
+        quantity = parseInt(quantityInput.value) || 1;
+    }
 
     // Tạo FormData
     const formData = new FormData();
     formData.append('action', 'add'); // Hành động vẫn là 'add' để thêm vào giỏ trước khi chuyển trang
-    formData.append('product_id', productId);
-    formData.append('quantity', parseInt(quantity));
+    formData.append('product_id', parseInt(productId) || 0);
+    formData.append('quantity', quantity);
 
-    fetch('api/cart-handler.php', {
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+
+    fetch(fullApiPath, {
         method: 'POST',
         body: formData
     })
@@ -60,7 +92,7 @@ function buyNow(productId) {
         console.error('Error:', error);
         showNotification('error', 'Có lỗi xảy ra khi mua ngay. Vui lòng thử lại!');
     });
-}
+};
 
 // --- Cập nhật các hàm khác nếu chúng cũng dùng JSON POST ---
 
@@ -82,7 +114,16 @@ function updateCartQuantity(productId, quantity) {
     formData.append('product_id', productId);
     formData.append('quantity', parseInt(quantity));
 
-    fetch('api/cart-handler.php', { // Đảm bảo URL đúng từ trang cart.php
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+
+    fetch(fullApiPath, {
         method: 'POST',
         body: formData
     })
@@ -105,7 +146,7 @@ function updateCartQuantity(productId, quantity) {
 }
 
 // Xóa sản phẩm khỏi giỏ hàng (Trang cart.php)
-function removeFromCart(productId) {
+window.removeFromCart = function(productId) {
     // Không cần confirm nữa vì đã có trong hàm updateCartQuantity hoặc gọi trực tiếp từ nút xóa
     // if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
     //     return;
@@ -115,7 +156,16 @@ function removeFromCart(productId) {
     formData.append('action', 'remove');
     formData.append('product_id', productId);
 
-    fetch('api/cart-handler.php', { // Đảm bảo URL đúng từ trang cart.php
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+
+    fetch(fullApiPath, {
         method: 'POST',
         body: formData
     })
@@ -132,30 +182,37 @@ function removeFromCart(productId) {
         console.error('Error:', error);
         showNotification('error', 'Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại!');
     });
-}
+};
 
 
 // --- Các hàm còn lại (updateCartCount, applyCoupon, showNotification, ...) giữ nguyên ---
 // ... (Các hàm khác không thay đổi) ...
 
-// Cập nhật số lượng giỏ hàng trong header (chỉ khi chưa có hàm này)
-if (typeof updateCartCount === 'undefined') {
-    function updateCartCount() {
-        fetch('api/cart-handler.php?action=count') // GET request is fine here
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const cartCountElement = document.querySelector('.cart-count');
-                if (cartCountElement) {
-                    cartCountElement.textContent = data.count;
-                }
+// Cập nhật số lượng giỏ hàng trong header
+window.updateCartCount = function() {
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = (apiPath.endsWith('.php') ? apiPath : apiPath + '.php') + '?action=count';
+
+    fetch(fullApiPath)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const cartCountElement = document.querySelector('.cart-count');
+            if (cartCountElement) {
+                cartCountElement.textContent = data.count;
             }
-        })
-        .catch(error => {
-            console.error('Error fetching cart count:', error);
-        });
-    }
-}
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching cart count:', error);
+    });
+};
 // ... (Phần còn lại của file cart.js)
 
 // Áp dụng mã giảm giá
@@ -167,7 +224,16 @@ function applyCoupon() {
         return;
     }
     
-    fetch('api/coupon-handler.php', {
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/coupon-handler.php' 
+                     : 'api/coupon-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+    
+    fetch(fullApiPath, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -193,7 +259,7 @@ function applyCoupon() {
 }
 
 // Hiển thị thông báo
-function showNotification(type, message) {
+window.showNotification = function(type, message) {
     // Xóa notification cũ nếu có
     const oldNotif = document.querySelector('.notification');
     if (oldNotif) {
@@ -283,7 +349,7 @@ function showNotification(type, message) {
             notification.remove();
         }, 300);
     }, 3000);
-}
+};
 
 function getNotificationIcon(type) {
     const icons = {
@@ -331,7 +397,16 @@ function clearCart() {
         return;
     }
     
-    fetch('api/cart-handler.php', {
+    // Xác định đường dẫn API đúng (xử lý cả trang con)
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+    
+    // Đảm bảo URL có .php
+    const fullApiPath = apiPath.endsWith('.php') ? apiPath : apiPath + '.php';
+    
+    fetch(fullApiPath, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -410,47 +485,4 @@ function decreaseCartQty(productId) {
         input.value = parseInt(input.value) - 1;
         updateCartQuantity(productId, input.value);
     }
-}
-// Thêm vào cuối file assets/js/cart.js
-
-function applyCoupon() {
-    const couponCode = document.getElementById('coupon_code').value.trim();
-    const btn = document.getElementById('apply-coupon-btn');
-    
-    if (!couponCode) {
-        alert('Vui lòng nhập mã giảm giá');
-        return;
-    }
-    
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    
-    fetch('../ajax/apply-coupon.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'coupon_code=' + encodeURIComponent(couponCode)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Hiển thị giảm giá
-            document.getElementById('discount').textContent = data.discount_formatted;
-            document.getElementById('discount').setAttribute('data-value', data.discount);
-            document.getElementById('total').textContent = data.new_total_formatted;
-            
-            alert('Áp dụng mã giảm giá thành công!');
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại');
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = 'Áp dụng';
-    });
 }

@@ -83,8 +83,8 @@ include __DIR__ . '/../layout.php';
                             </select>
                         </div>
                         <div class="d-flex gap-10">
-                            <button id="exportBtn" class="btn btn-success">Xuất CSV</button>
-                            <button id="bulkDeleteBtn" class="btn btn-danger">Xóa đã chọn</button>
+                            <button id="exportBtn" class="btn btn-success"><i class="fas fa-download"></i> Xuất CSV</button>
+                            <button id="bulkDeleteBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Xóa đã chọn</button>
                         </div>
                     </div>
 

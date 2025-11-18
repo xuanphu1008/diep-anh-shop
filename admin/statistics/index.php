@@ -22,118 +22,122 @@ $pageTitle = 'Thống kê - Admin';
 $activeMenu = 'statistics';
 include __DIR__ . '/../layout.php';
 ?>
-    <h1><i class="fas fa-chart-bar"></i> Thống kê & Báo cáo</h1>
-    <div style="background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <form method="GET" style="display: flex; gap: 15px; align-items: end;">
-            <div class="form-group" style="margin: 0;">
-                <label>Năm</label>
-                <select name="year" class="form-control">
-                    <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
-                        <option value="<?php echo $y; ?>" <?php echo $y == $year ? 'selected' : ''; ?>><?php echo $y; ?></option>
-                    <?php endfor; ?>
-                </select>
+            <div class="section-header">
+                <h1 class="section-title"><i class="fas fa-chart-bar"></i> Thống kê & Báo cáo</h1>
             </div>
-            <div class="form-group" style="margin: 0;">
-                <label>Tháng</label>
-                <select name="month" class="form-control">
-                    <?php for ($m = 1; $m <= 12; $m++): ?>
-                        <option value="<?php echo str_pad($m, 2, '0', STR_PAD_LEFT); ?>" 
-                                <?php echo $m == $month ? 'selected' : ''; ?>>
-                            Tháng <?php echo $m; ?>
-                        </option>
-                    <?php endfor; ?>
-                </select>
+            
+            <div class="card">
+                <form method="GET" style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Năm</label>
+                        <select name="year" class="form-control">
+                            <?php for ($y = date('Y'); $y >= 2020; $y--): ?>
+                                <option value="<?php echo $y; ?>" <?php echo $y == $year ? 'selected' : ''; ?>><?php echo $y; ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>Tháng</label>
+                        <select name="month" class="form-control">
+                            <?php for ($m = 1; $m <= 12; $m++): ?>
+                                <option value="<?php echo str_pad($m, 2, '0', STR_PAD_LEFT); ?>" 
+                                        <?php echo $m == $month ? 'selected' : ''; ?>>
+                                    Tháng <?php echo $m; ?>
+                                </option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Lọc
+                    </button>
+                    <a href="export.php?year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i> Xuất Excel
+                    </a>
+                </form>
             </div>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-filter"></i> Lọc
-            </button>
-            <a href="export.php?year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="btn btn-success">
-                <i class="fas fa-file-excel"></i> Xuất Excel
-            </a>
-        </form>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-        <div class="stat-card blue">
-            <div>
-                <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
-                <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
-                    <?php echo formatCurrency($totalRevenue); ?>
-                </div>
-            </div>
-            <i class="fas fa-dollar-sign icon"></i>
-        </div>
-        <div class="stat-card green">
-            <div>
-                <div style="font-size: 14px; color: #7f8c8d;">Doanh thu tháng <?php echo $month; ?></div>
-                <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
-                    <?php 
-                    $monthTotal = 0;
-                    foreach ($dailyRevenue as $day) {
-                        $monthTotal += $day['revenue'];
-                    }
-                    echo formatCurrency($monthTotal);
-                    ?>
-                </div>
-            </div>
-            <i class="fas fa-calendar icon"></i>
-        </div>
-        <div class="stat-card orange">
-            <div>
-                <div style="font-size: 14px; color: #7f8c8d;">Số đơn tháng <?php echo $month; ?></div>
-                <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
-                    <?php 
-                    $monthOrders = 0;
-                    foreach ($dailyRevenue as $day) {
-                        $monthOrders += $day['order_count'];
-                    }
-                    echo $monthOrders;
-                    ?>
-                </div>
-            </div>
-            <i class="fas fa-shopping-cart icon"></i>
-        </div>
-    </div>
-    <div class="chart-container">
-        <h3><i class="fas fa-chart-line"></i> Doanh thu theo tháng năm <?php echo $year; ?></h3>
-        <canvas id="monthlyChart" width="400" height="100"></canvas>
-    </div>
-    <div class="chart-container">
-        <h3><i class="fas fa-chart-bar"></i> Doanh thu theo ngày tháng <?php echo $month; ?>/<?php echo $year; ?></h3>
-        <canvas id="dailyChart" width="400" height="100"></canvas>
-    </div>
-    <div class="data-table">
-        <h3 style="padding: 20px; background: #34495e; color: #fff; margin: 0;">
-            <i class="fas fa-trophy"></i> Top 10 sản phẩm bán chạy
-        </h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Sản phẩm</th>
-                    <th>Đã bán</th>
-                    <th>Doanh thu</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($topProducts as $index => $product): ?>
-                <tr>
-                    <td><strong><?php echo $index + 1; ?></strong></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="<?php echo getProductImage($product['image']); ?>" 
-                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
-                            <div><?php echo htmlspecialchars($product['product_name']); ?></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div class="stat-card blue">
+                    <div>
+                        <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                            <?php echo formatCurrency($totalRevenue); ?>
                         </div>
-                    </td>
-                    <td><strong><?php echo $product['total_sold']; ?></strong></td>
-                    <td><strong style="color: #e74c3c;"><?php echo formatCurrency($product['total_revenue']); ?></strong></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                    </div>
+                    <i class="fas fa-dollar-sign icon"></i>
+                </div>
+                <div class="stat-card green">
+                    <div>
+                        <div style="font-size: 14px; color: #7f8c8d;">Doanh thu tháng <?php echo $month; ?></div>
+                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                            <?php 
+                            $monthTotal = 0;
+                            foreach ($dailyRevenue as $day) {
+                                $monthTotal += $day['revenue'];
+                            }
+                            echo formatCurrency($monthTotal);
+                            ?>
+                        </div>
+                    </div>
+                    <i class="fas fa-calendar icon"></i>
+                </div>
+                <div class="stat-card orange">
+                    <div>
+                        <div style="font-size: 14px; color: #7f8c8d;">Số đơn tháng <?php echo $month; ?></div>
+                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                            <?php 
+                            $monthOrders = 0;
+                            foreach ($dailyRevenue as $day) {
+                                $monthOrders += $day['order_count'];
+                            }
+                            echo $monthOrders;
+                            ?>
+                        </div>
+                    </div>
+                    <i class="fas fa-shopping-cart icon"></i>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3><i class="fas fa-chart-line"></i> Doanh thu theo tháng năm <?php echo $year; ?></h3>
+                <canvas id="monthlyChart" width="400" height="100"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3><i class="fas fa-chart-bar"></i> Doanh thu theo ngày tháng <?php echo $month; ?>/<?php echo $year; ?></h3>
+                <canvas id="dailyChart" width="400" height="100"></canvas>
+            </div>
+            
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sản phẩm</th>
+                            <th>Đã bán</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topProducts as $index => $product): ?>
+                        <tr>
+                            <td><strong><?php echo $index + 1; ?></strong></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="<?php echo getProductImage($product['image']); ?>" 
+                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                                    <div><?php echo htmlspecialchars($product['product_name']); ?></div>
+                                </div>
+                            </td>
+                            <td><strong><?php echo $product['total_sold']; ?></strong></td>
+                            <td><strong style="color: #e74c3c;"><?php echo formatCurrency($product['total_revenue']); ?></strong></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </main>
     </div>
-</main>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Biểu đồ theo tháng

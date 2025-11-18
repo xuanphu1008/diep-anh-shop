@@ -44,11 +44,9 @@ $pageTitle = 'Quản lý tin tức - Admin';
 $activeMenu = 'news';
 include __DIR__ . '/../layout.php';
 ?>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1><i class="fas fa-newspaper"></i> Quản lý tin tức</h1>
-                <a href="add.php" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Thêm tin tức
-                </a>
+            <div class="section-header">
+                <h1 class="section-title"><i class="fas fa-newspaper"></i> Quản lý tin tức</h1>
+                <a href="add.php" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Thêm</a>
             </div>
             
             <?php if ($flash = getFlashMessage()): ?>

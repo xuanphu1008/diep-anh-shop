@@ -26,7 +26,9 @@ $pageTitle = 'Quản lý đơn hàng - Admin';
 $activeMenu = 'orders';
 include __DIR__ . '/../layout.php';
 ?>
-            <h1><i class="fas fa-shopping-cart"></i> Quản lý đơn hàng</h1>
+            <div class="page-header">
+                <h1><i class="fas fa-shopping-cart"></i> Quản lý đơn hàng</h1>
+            </div>
             
             <?php if ($flash = getFlashMessage()): ?>
                 <div class="alert alert-<?php echo $flash['type']; ?>">

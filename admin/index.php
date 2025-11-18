@@ -83,20 +83,46 @@ $pageTitle = 'Dashboard - Admin';
         .stat-card {
             background: #fff;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
         }
         .stat-card .icon {
             font-size: 48px;
-            opacity: 0.3;
+            opacity: 0.1;
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .stat-card.blue {
+            border-left: 4px solid #3498db;
         }
         .stat-card.blue .icon { color: #3498db; }
+        .stat-card.green {
+            border-left: 4px solid #2ecc71;
+        }
         .stat-card.green .icon { color: #2ecc71; }
+        .stat-card.orange {
+            border-left: 4px solid #f39c12;
+        }
         .stat-card.orange .icon { color: #f39c12; }
+        .stat-card.red {
+            border-left: 4px solid #e74c3c;
+        }
         .stat-card.red .icon { color: #e74c3c; }
+        .stat-card.purple {
+            border-left: 4px solid #9b59b6;
+        }
         .stat-card.purple .icon { color: #9b59b6; }
         .chart-container {
             background: #fff;
@@ -141,8 +167,8 @@ $pageTitle = 'Dashboard - Admin';
                 <li><a href="products/index.php"><i class="fas fa-box"></i> Sản phẩm</a></li>
                 <li><a href="categories/index.php"><i class="fas fa-list"></i> Danh mục</a></li>
                 <li><a href="orders/index.php"><i class="fas fa-shopping-cart"></i> Đơn hàng</a></li>
-                <li><a href="users/customers.php"><i class="fas fa-users"></i> Khách hàng</a></li>
-                <li><a href="users/staff.php"><i class="fas fa-user-tie"></i> Nhân viên</a></li>
+                <li><a href="user/customers.php"><i class="fas fa-users"></i> Khách hàng</a></li>
+                <li><a href="user/staff.php"><i class="fas fa-user-tie"></i> Nhân viên</a></li>
                 <li><a href="coupons/index.php"><i class="fas fa-tags"></i> Mã giảm giá</a></li>
                 <li><a href="news/index.php"><i class="fas fa-newspaper"></i> Tin tức</a></li>
                 <li><a href="banners/index.php"><i class="fas fa-image"></i> Banner</a></li>
@@ -158,7 +184,16 @@ $pageTitle = 'Dashboard - Admin';
         <main class="admin-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                 <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
-                <div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div class="stat-card blue">
+                    <div>
+                        <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                            <?php echo formatCurrency($totalRevenue); ?>
+                        </div>
+                    </div>
                     <i class="fas fa-dollar-sign icon"></i>
                 </div>
                 
@@ -190,16 +225,6 @@ $pageTitle = 'Dashboard - Admin';
                         </div>
                     </div>
                     <i class="fas fa-users icon"></i>
-                </div>
-                
-                <div class="stat-card purple">
-                    <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Đơn chờ xử lý</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
-                            <?php echo $pendingOrders; ?>
-                        </div>
-                    </div>
-                    <i class="fas fa-clock icon"></i>
                 </div>
             </div>
             
@@ -333,18 +358,3 @@ $pageTitle = 'Dashboard - Admin';
     </script>
 </body>
 </html>
-<i class="fas fa-user"></i> 
-                    Xin chào, <strong><?php echo htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username']); ?></strong>
-                </div>
-            </div>
-            
-            <!-- Thống kê tổng quan -->
-            <div class="stats-grid">
-                <div class="stat-card blue">
-                    <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
-                            <?php echo formatCurrency($totalRevenue); ?>
-                        </div>
-                    </div>
-                    <i class

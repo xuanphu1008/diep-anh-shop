@@ -14,7 +14,9 @@ $pageTitle = 'Quản lý khách hàng - Admin';
 $activeMenu = 'customers';
 include __DIR__ . '/../layout.php';
 ?>
-            <h1><i class="fas fa-users"></i> Danh sách khách hàng</h1>
+            <div class="page-header">
+                <h1><i class="fas fa-users"></i> Danh sách khách hàng</h1>
+            </div>
             
             <div class="data-table">
                 <table>

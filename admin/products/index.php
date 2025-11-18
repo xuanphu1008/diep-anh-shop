@@ -44,11 +44,11 @@ $pageTitle = 'Quản lý sản phẩm - Admin';
 $activeMenu = 'products';
 include __DIR__ . '/../layout.php';
 ?>
-            <div class="section-header d-flex justify-between align-center" style="margin-bottom: 20px;">
+            <div class="section-header">
                 <h1 class="section-title"><i class="fas fa-box"></i> Quản lý sản phẩm</h1>
                 <div class="d-flex gap-10">
                     <a href="add.php" class="btn btn-primary"><i class="fas fa-plus"></i> Thêm sản phẩm</a>
-                    <button id="exportProductsBtn" class="btn btn-success">Xuất CSV</button>
+                    <button id="exportProductsBtn" class="btn btn-success"><i class="fas fa-download"></i> Xuất CSV</button>
                 </div>
             </div>
 
@@ -71,9 +71,9 @@ include __DIR__ . '/../layout.php';
                     </form>
                 </div>
                 <div class="d-flex gap-10">
-                    <button id="bulkActivateBtn" class="btn btn-success">Kích hoạt</button>
-                    <button id="bulkDeactivateBtn" class="btn btn-warning">Ngừng bán</button>
-                    <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
+                    <button id="bulkActivateBtn" class="btn btn-success"><i class="fas fa-check"></i> Kích hoạt</button>
+                    <button id="bulkDeactivateBtn" class="btn btn-warning"><i class="fas fa-ban"></i> Ngừng bán</button>
+                    <button id="bulkDeleteBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Xóa</button>
                 </div>
             </div>
             
@@ -94,8 +94,8 @@ include __DIR__ . '/../layout.php';
                             <th>Tên</th>
                             <th>Danh mục</th>
                             <th>Giá</th>
-                            <th>Số lượng</th>
                             <th>Trạng thái</th>
+                            <th>Số lượng</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
@@ -113,8 +113,8 @@ include __DIR__ . '/../layout.php';
                             </td>
                             <td><?php echo htmlspecialchars($product['category_name']); ?></td>
                             <td><?php echo $product['discount_price'] ? ('<del>'.formatCurrency($product['price']).'</del><br><strong style="color:#e74c3c;">'.formatCurrency($product['discount_price']).'</strong>') : '<strong>'.formatCurrency($product['price']).'</strong>'; ?></td>
-                            <td><span style="color: <?php echo $product['quantity'] > 0 ? '#27ae60' : '#e74c3c'; ?>;"><?php echo $product['quantity']; ?></span></td>
                             <td><?php echo $product['is_active'] ? '<span class="badge badge-success">Đang bán</span>' : '<span class="badge badge-secondary">Ngừng bán</span>'; ?></td>
+                            <td><span style="color: <?php echo $product['quantity'] > 0 ? '#27ae60' : '#e74c3c'; ?>;"><?php echo $product['quantity']; ?></span></td>
                             <td>
                                 <a href="edit.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-primary" title="Sửa"><i class="fas fa-edit"></i></a>
                                 <a href="import.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-success" title="Nhập hàng"><i class="fas fa-download"></i></a>

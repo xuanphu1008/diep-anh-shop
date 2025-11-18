@@ -25,7 +25,9 @@ $pageTitle = 'Quản lý liên hệ - Admin';
 $activeMenu = 'contacts';
 include __DIR__ . '/../layout.php';
 ?>
-            <h1><i class="fas fa-envelope"></i> Quản lý liên hệ</h1>
+            <div class="page-header">
+                <h1><i class="fas fa-envelope"></i> Quản lý liên hệ</h1>
+            </div>
             
             <?php if ($flash = getFlashMessage()): ?>
                 <div class="alert alert-<?php echo $flash['type']; ?>">
@@ -42,8 +44,8 @@ include __DIR__ . '/../layout.php';
                             <th>Email</th>
                             <th>SĐT</th>
                             <th>Tiêu đề</th>
-                            <th>Ngày gửi</th>
                             <th>Trạng thái</th>
+                            <th>Ngày gửi</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
@@ -55,7 +57,6 @@ include __DIR__ . '/../layout.php';
                             <td><?php echo htmlspecialchars($contact['email']); ?></td>
                             <td><?php echo htmlspecialchars($contact['phone']); ?></td>
                             <td><?php echo htmlspecialchars($contact['subject']); ?></td>
-                            <td><?php echo formatDate($contact['created_at'], 'd/m/Y H:i'); ?></td>
                             <td>
                                 <form method="POST" style="display: inline;">
                                     <input type="hidden" name="contact_id" value="<?php echo $contact['id']; ?>">
@@ -68,6 +69,7 @@ include __DIR__ . '/../layout.php';
                                     <button type="submit" name="update_status" style="display: none;"></button>
                                 </form>
                             </td>
+                            <td><?php echo formatDate($contact['created_at'], 'd/m/Y H:i'); ?></td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="viewMessage(<?php echo $contact['id']; ?>, '<?php echo htmlspecialchars($contact['message'], ENT_QUOTES); ?>')">
                                     <i class="fas fa-eye"></i>

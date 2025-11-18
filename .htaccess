@@ -4,6 +4,9 @@
     RewriteEngine On
     RewriteBase /diep-anh-shop/
 
+    # 0) Exclude /api/ folder - không rewrite API requests
+    RewriteRule ^api/ - [L]
+
     # 1) Chỉ redirect trực tiếp các request client đến *.php sang URL không extension
     #    Dùng THE_REQUEST để đảm bảo nội bộ rewrite (subrequest) không kích hoạt redirect.
     RewriteCond %{THE_REQUEST} \s/([^\s?]+)\.php[^\s]*\s [NC]

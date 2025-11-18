@@ -3,9 +3,15 @@
 
 header('Content-Type: application/json');
 
+// Khởi động session trước khi include config
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 try {
     require_once __DIR__ . '/../config/config.php';
     require_once __DIR__ . '/../includes/Database.php';
+    require_once __DIR__ . '/../includes/functions.php';
     require_once __DIR__ . '/../models/Cart.php';
     require_once __DIR__ . '/../models/Product.php';
 
@@ -13,9 +19,20 @@ try {
     $productModel = new Product();
 } catch (Exception $e) {
     error_log("Error loading files: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Lỗi khởi tạo: ' . $e->getMessage()]);
+    exit;
+} catch (Error $e) {
+    error_log("Error loading files: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Lỗi khởi tạo: ' . $e->getMessage()]);
     exit;
 }
+
+// Debug log
+error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+error_log("POST data: " . json_encode($_POST));
+error_log("GET data: " . json_encode($_GET));
 
 // Lấy action từ request
 $action = '';
@@ -28,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Nếu action vẫn rỗng, thử lấy từ input stream
 if (empty($action)) {
     $input = file_get_contents('php://input');
+    error_log("Input stream: " . $input);
     if (!empty($input)) {
         $data = json_decode($input, true);
         if ($data && isset($data['action'])) {
@@ -35,6 +53,8 @@ if (empty($action)) {
         }
     }
 }
+
+error_log("Action: " . $action);
 
 // Lấy các tham số khác
 $productId = 0;
@@ -62,10 +82,22 @@ $userId = $_SESSION['user_id'] ?? null;
 
 // Nếu action rỗng, không làm gì và trả về lỗi nhưng không log
 if (empty($action)) {
+    error_log("ERROR: Action is empty!");
+    error_log("POST: " . json_encode($_POST));
+    error_log("GET: " . json_encode($_GET));
+    error_log("Input stream: " . $input);
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Missing action parameter']);
     exit;
 }
+
+// Set error handler để catch lỗi PHP
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("PHP Error [$errno]: $errstr in $errfile on line $errline");
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Lỗi PHP: ' . $errstr]);
+    exit;
+});
 
 switch ($action) {
     case 'add':

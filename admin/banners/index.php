@@ -18,6 +18,7 @@ include __DIR__ . '/../layout.php';
                         <th>Tiêu đề</th>
                         <th>Hình ảnh</th>
                         <th>Liên kết</th>
+                        <th>Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>

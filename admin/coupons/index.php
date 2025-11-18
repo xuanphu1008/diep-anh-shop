@@ -46,7 +46,9 @@ $pageTitle = 'Quản lý mã giảm giá - Admin';
 $activeMenu = 'coupons';
 include __DIR__ . '/../layout.php';
 ?>
-            <h1><i class="fas fa-tags"></i> Quản lý mã giảm giá</h1>
+            <div class="page-header">
+                <h1><i class="fas fa-tags"></i> Quản lý mã giảm giá</h1>
+            </div>
             
             <?php if ($flash = getFlashMessage()): ?>
                 <div class="alert alert-<?php echo $flash['type']; ?>">
@@ -64,6 +66,7 @@ include __DIR__ . '/../layout.php';
                                 <th>Giá trị</th>
                                 <th>Số lượng</th>
                                 <th>Đã dùng</th>
+                                <th>Trạng thái</th>
                                 <th>Hiệu lực</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -82,6 +85,13 @@ include __DIR__ . '/../layout.php';
                                 </td>
                                 <td><?php echo $coupon['quantity']; ?></td>
                                 <td><?php echo $coupon['used_quantity']; ?></td>
+                                <td>
+                                    <?php if ($coupon['status']): ?>
+                                        <span class="badge badge-success">Kích hoạt</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary">Tắt</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php if ($coupon['start_date'] && $coupon['end_date']): ?>
                                         <?php echo formatDate($coupon['start_date'], 'd/m/Y'); ?> - 
