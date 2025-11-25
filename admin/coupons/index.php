@@ -37,7 +37,29 @@ if (isset($_GET['delete'])) {
     redirect('index.php');
 }
 
-$coupons = $couponModel->getAllCoupons();
+// Filters & pagination
+$filters = [];
+$filters['keyword'] = $_GET['q'] ?? '';
+$filters['status'] = $_GET['status'] ?? '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
+$allCoupons = $couponModel->getAllCoupons();
+$filtered = array_filter($allCoupons, function($c) use ($filters) {
+    $ok = true;
+    if ($filters['keyword']) {
+        $kw = mb_strtolower($filters['keyword']);
+        $ok = $ok && mb_strpos(mb_strtolower($c['code']), $kw) !== false;
+    }
+    if ($filters['status'] !== '') {
+        $ok = $ok && ((string)$c['status'] === $filters['status']);
+    }
+    return $ok;
+});
+$total = count($filtered);
+$coupons = array_slice(array_values($filtered), $offset, $perPage);
+
 $editCoupon = null;
 if (isset($_GET['edit'])) {
     $editCoupon = $couponModel->getCouponById($_GET['edit']);
@@ -46,10 +68,30 @@ $pageTitle = 'Quản lý mã giảm giá - Admin';
 $activeMenu = 'coupons';
 include __DIR__ . '/../layout.php';
 ?>
-            <div class="page-header">
-                <h1><i class="fas fa-tags"></i> Quản lý mã giảm giá</h1>
+            <div class="section-header d-flex justify-between align-center" style="margin-bottom: 20px;">
+                <h1 class="section-title"><i class="fas fa-tags"></i> Quản lý mã giảm giá</h1>
+                <div class="d-flex gap-10">
+                    <button id="exportCouponsBtn" class="btn btn-success">Xuất CSV</button>
+                </div>
             </div>
-            
+
+            <div class="admin-toolbar d-flex justify-between mb-20">
+                <form method="GET" style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" name="q" value="<?php echo htmlspecialchars($filters['keyword']); ?>" placeholder="Tìm mã..." class="form-control">
+                    <select name="status" class="form-control">
+                        <option value="">Tất cả</option>
+                        <option value="1" <?php echo $filters['status'] === '1' ? 'selected' : ''; ?>>Kích hoạt</option>
+                        <option value="0" <?php echo $filters['status'] === '0' ? 'selected' : ''; ?>>Tắt</option>
+                    </select>
+                    <button class="btn btn-primary">Lọc</button>
+                </form>
+                <div class="d-flex gap-10">
+                    <button id="bulkActivateBtn" class="btn btn-success">Kích hoạt</button>
+                    <button id="bulkDeactivateBtn" class="btn btn-warning">Tắt</button>
+                    <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
+                </div>
+            </div>
+
             <?php if ($flash = getFlashMessage()): ?>
                 <div class="alert alert-<?php echo $flash['type']; ?>">
                     <?php echo htmlspecialchars($flash['message']); ?>
@@ -58,9 +100,12 @@ include __DIR__ . '/../layout.php';
             
             <div class="content-grid">
                 <div class="data-table">
+                    <form id="bulkCouponsForm">
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:40px;"><input type="checkbox" id="selectAll"></th>
+                                <th>ID</th>
                                 <th>Mã</th>
                                 <th>Loại</th>
                                 <th>Giá trị</th>
@@ -73,7 +118,9 @@ include __DIR__ . '/../layout.php';
                         </thead>
                         <tbody>
                             <?php foreach ($coupons as $coupon): ?>
-                            <tr>
+                            <tr data-id="<?php echo $coupon['id']; ?>">
+                                <td><input type="checkbox" name="ids[]" value="<?php echo $coupon['id']; ?>"></td>
+                                <td><?php echo $coupon['id']; ?></td>
                                 <td><strong><?php echo htmlspecialchars($coupon['code']); ?></strong></td>
                                 <td><?php echo $coupon['type'] === 'percent' ? 'Phần trăm' : 'Cố định'; ?></td>
                                 <td>
@@ -85,34 +132,36 @@ include __DIR__ . '/../layout.php';
                                 </td>
                                 <td><?php echo $coupon['quantity']; ?></td>
                                 <td><?php echo $coupon['used_quantity']; ?></td>
-                                <td>
-                                    <?php if ($coupon['status']): ?>
-                                        <span class="badge badge-success">Kích hoạt</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-secondary">Tắt</span>
-                                    <?php endif; ?>
-                                </td>
+                                <td><?php echo $coupon['status'] ? '<span class="badge badge-success">Kích hoạt</span>' : '<span class="badge badge-secondary">Tắt</span>'; ?></td>
                                 <td>
                                     <?php if ($coupon['start_date'] && $coupon['end_date']): ?>
-                                        <?php echo formatDate($coupon['start_date'], 'd/m/Y'); ?> - 
-                                        <?php echo formatDate($coupon['end_date'], 'd/m/Y'); ?>
+                                        <?php echo formatDate($coupon['start_date'], 'd/m'); ?> - <?php echo formatDate($coupon['end_date'], 'd/m'); ?>
                                     <?php else: ?>
                                         Không giới hạn
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="?edit=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="?delete=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-danger"
-                                       onclick="return confirm('Xóa mã giảm giá?')">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    <a href="?edit=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                                    <a href="?delete=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa mã?')"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </form>
+
+                    <!-- Pagination -->
+                    <?php if ($total > $perPage): ?>
+                    <div class="pagination mt-20">
+                        <?php
+                        $pages = ceil($total / $perPage);
+                        for ($p = 1; $p <= $pages; $p++):
+                            $qs = $_GET; $qs['page'] = $p; $link = '?'.http_build_query($qs);
+                        ?>
+                            <a href="<?php echo $link; ?>" class="<?php echo $p == $page ? 'active' : ''; ?>"><?php echo $p; ?></a>
+                        <?php endfor; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <div style="background: #fff; padding: 30px; border-radius: 10px; height: fit-content;">
@@ -183,12 +232,64 @@ include __DIR__ . '/../layout.php';
                             <i class="fas fa-save"></i> <?php echo $editCoupon ? 'Cập nhật' : 'Tạo mã'; ?>
                         </button>
                         <?php if ($editCoupon): ?>
-                            <a href="index.php" class="btn btn-secondary btn-block">Hủy</a>
+                            <a href="index.php" class="btn btn-secondary btn-block" style="margin-top:10px;">Hủy</a>
                         <?php endif; ?>
                     </form>
                 </div>
             </div>
         </main>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', function(){
+                document.querySelectorAll('#bulkCouponsForm tbody input[type=checkbox]').forEach(cb => cb.checked = this.checked);
+            });
+        }
+        function getSelectedIds(){
+            return Array.from(document.querySelectorAll('#bulkCouponsForm tbody input[type=checkbox]:checked')).map(i => i.value);
+        }
+        function doBulkAction(action){
+            const ids = getSelectedIds();
+            if (ids.length === 0) { alert('Chọn ít nhất một mã'); return; }
+            if (!confirm('Xác nhận thực hiện: ' + action + ' trên ' + ids.length + ' mã?')) return;
+            fetch('bulk-handler.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ids })
+            }).then(r => r.json()).then(data => {
+                if (data.success) window.location.reload(); else alert(data.message || 'Lỗi');
+            }).catch(()=> alert('Lỗi mạng'));
+        }
+        document.getElementById('bulkActivateBtn')?.addEventListener('click', () => doBulkAction('bulk_activate'));
+        document.getElementById('bulkDeactivateBtn')?.addEventListener('click', () => doBulkAction('bulk_deactivate'));
+        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => doBulkAction('bulk_delete'));
+        document.getElementById('exportCouponsBtn')?.addEventListener('click', function(){
+            const rows = Array.from(document.querySelectorAll('.data-table tbody tr'));
+            let csv = 'ID,Code,Type,Value,Qty,Used,Status\n';
+            rows.forEach(r=>{
+                const cols = r.querySelectorAll('td');
+                if (!cols.length) return;
+                const id = cols[1].innerText.trim();
+                const code = cols[2].innerText.trim();
+                const type = cols[3].innerText.trim();
+                const value = cols[4].innerText.trim();
+                const qty = cols[5].innerText.trim();
+                const used = cols[6].innerText.trim();
+                const status = cols[7].innerText.trim();
+                csv += [id, code, type, value, qty, used, status].join(',') + '\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'coupons_export.csv';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        });
+    });
+    </script>
+
 </body>
 </html>

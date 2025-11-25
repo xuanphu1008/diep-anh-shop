@@ -38,7 +38,7 @@ $baseUrl = $isSubDir ? '../' : '';
             <li><a href="<?php echo $baseUrl; ?>index.php" class="<?php if(isset($activeMenu) && $activeMenu=='dashboard') echo 'active';?>"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="<?php echo $baseUrl; ?>products/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='products') echo 'active';?>"><i class="fas fa-box"></i> Sản phẩm</a></li>
             <li><a href="<?php echo $baseUrl; ?>categories/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='categories') echo 'active';?>"><i class="fas fa-list"></i> Danh mục</a></li>
-            <li><a href="<?php echo $baseUrl; ?>suppilers/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='suppliers') echo 'active';?>"><i class="fas fa-truck"></i> Nhà cung cấp</a></li>
+            <li><a href="<?php echo $baseUrl; ?>suppliers/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='suppliers') echo 'active';?>"><i class="fas fa-truck"></i> Nhà cung cấp</a></li>
             <li><a href="<?php echo $baseUrl; ?>orders/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='orders') echo 'active';?>"><i class="fas fa-shopping-cart"></i> Đơn hàng</a></li>
             <li><a href="<?php echo $baseUrl; ?>user/customers.php" class="<?php if(isset($activeMenu) && $activeMenu=='customers') echo 'active';?>"><i class="fas fa-users"></i> Khách hàng</a></li>
             <li><a href="<?php echo $baseUrl; ?>user/staff.php" class="<?php if(isset($activeMenu) && $activeMenu=='staff') echo 'active';?>"><i class="fas fa-user-tie"></i> Nhân viên</a></li>
@@ -48,8 +48,8 @@ $baseUrl = $isSubDir ? '../' : '';
             <li><a href="<?php echo $baseUrl; ?>contacts/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='contacts') echo 'active';?>"><i class="fas fa-envelope"></i> Liên hệ</a></li>
             <li><a href="<?php echo $baseUrl; ?>statistics/index.php" class="<?php if(isset($activeMenu) && $activeMenu=='statistics') echo 'active';?>"><i class="fas fa-chart-bar"></i> Thống kê</a></li>
             <li><hr style="border-color: rgba(255,255,255,0.1);"></li>
-            <li><a href="../index.php"><i class="fas fa-home"></i> Về trang chủ</a></li>
-            <li><a href="../customer/logout.php"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
+            <li><a href="<?php echo SITE_URL; ?>/index.php"><i class="fas fa-home"></i> Về trang chủ</a></li>
+            <li><a href="<?php echo SITE_URL; ?>/customer/logout.php"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
         </ul>
     </aside>
     <!-- Main Content -->

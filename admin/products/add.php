@@ -4,17 +4,16 @@ require_once __DIR__ . '/../../includes/Database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../models/Product.php';
 require_once __DIR__ . '/../../models/Category.php';
-require_once __DIR__ . '/../../models/Supplier.php';
+require_once __DIR__ . '/../../models/Suppiler.php';
 
 requireStaff();
 
 $productModel = new Product();
 $categoryModel = new Category();
-$supplierModel = new Supplier();
+$supplierModel = new Suppiler();
 
 $categories = $categoryModel->getAllCategories();
 $suppliers = $supplierModel->getAllSuppliers();
-
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ...existing code...

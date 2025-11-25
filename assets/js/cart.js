@@ -1,3 +1,60 @@
+// Hàm loading cho nút bấm
+function setBtnLoading(btn, isLoading) {
+    if (isLoading) {
+        btn.dataset.originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = btn.dataset.originalText;
+        btn.disabled = false;
+    }
+}
+
+// Cập nhật hàm addToCart để có loading
+window.addToCart = function(productId, btnElement = null) {
+    // Nếu gọi từ nút, truyền 'this' vào onclick: onclick="addToCart(1, this)"
+    // Nếu không truyền, tự tìm nút (nếu có thể) hoặc bỏ qua hiệu ứng
+    if(btnElement) setBtnLoading(btnElement, true);
+
+    const quantityInput = document.getElementById('quantity');
+    let quantity = 1;
+    if (quantityInput && quantityInput.value) {
+        quantity = parseInt(quantityInput.value) || 1;
+    }
+
+    // ... (Giữ nguyên phần xác định đường dẫn API) ...
+    const apiPath = window.location.pathname.includes('/customer/') || 
+                     window.location.pathname.includes('/admin/') 
+                     ? '../api/cart-handler.php' 
+                     : 'api/cart-handler.php';
+
+    const formData = new FormData();
+    formData.append('action', 'add');
+    formData.append('product_id', parseInt(productId) || 0);
+    formData.append('quantity', quantity);
+
+    fetch(apiPath, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('success', data.message);
+            updateCartCount();
+        } else {
+            showNotification('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('error', 'Lỗi kết nối!');
+    })
+    .finally(() => {
+        if(btnElement) setBtnLoading(btnElement, false);
+    });
+};
+
 // Thêm sản phẩm vào giỏ hàng
 window.addToCart = function(productId) {
     const quantityInput = document.getElementById('quantity');
