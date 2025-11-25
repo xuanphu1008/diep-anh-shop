@@ -333,6 +333,7 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
                         <button class="tab-btn active" onclick="showTab('description')">Mô tả</button>
                         <button class="tab-btn" onclick="showTab('specifications')">Thông số kỹ thuật</button>
                         <button class="tab-btn" onclick="showTab('reviews')">Đánh giá (<?php echo $rating['total_reviews']; ?>)</button>
+                        <button class="btn btn-cart" onclick="addToCart(<?php echo $product['id']; ?>, this)"> <i class="fas fa-shopping-cart"></i> Thêm vào giỏ</button>
                     </div>
                     
                     <div id="description" class="tab-content active">
