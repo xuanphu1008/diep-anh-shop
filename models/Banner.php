@@ -1,5 +1,4 @@
 <?php
-require_once 'models/Banner.php';
 class Banner {
     private $db;
     
@@ -64,6 +63,45 @@ class Banner {
             return ['success' => true, 'message' => 'Khôi phục banner thành công'];
         }
         return ['success' => false, 'message' => 'Khôi phục banner thất bại'];
+    }
+
+    // Admin helpers: count and paginated fetch with filters
+    public function countAdminBanners($filters = []) {
+        $where = "WHERE deleted_at IS NULL";
+        $params = [];
+        if (!empty($filters['keyword'])) {
+            $where .= " AND title LIKE ?";
+            $params[] = '%' . $filters['keyword'] . '%';
+        }
+        if ($filters['status'] !== '' && $filters['status'] !== null) {
+            $where .= " AND status = ?";
+            $params[] = (int)$filters['status'];
+        }
+        $sql = "SELECT COUNT(*) as cnt FROM banners " . $where;
+        $row = $this->db->fetchOne($sql, $params);
+        return $row ? (int)$row['cnt'] : 0;
+    }
+
+    public function getAdminBanners($filters = [], $limit = 20, $offset = 0) {
+        $where = "WHERE deleted_at IS NULL";
+        $params = [];
+        if (!empty($filters['keyword'])) {
+            $where .= " AND title LIKE ?";
+            $params[] = '%' . $filters['keyword'] . '%';
+        }
+        if ($filters['status'] !== '' && $filters['status'] !== null) {
+            $where .= " AND status = ?";
+            $params[] = (int)$filters['status'];
+        }
+        $sql = "SELECT * FROM banners " . $where . " ORDER BY position ASC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        return $this->db->fetchAll($sql, $params);
+    }
+
+    public function getBannerById($id) {
+        $sql = "SELECT * FROM banners WHERE id = ? AND deleted_at IS NULL";
+        return $this->db->fetchOne($sql, [$id]);
     }
 }
 ?>

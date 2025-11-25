@@ -75,5 +75,41 @@ class Contact {
         $result = $this->db->fetchOne($sql, $params);
         return $result['total'] ?? 0;
     }
+
+    // Admin helpers
+    public function countAdminContacts($filters = []) {
+        $where = "WHERE 1=1";
+        $params = [];
+        if (!empty($filters['keyword'])) {
+            $where .= " AND (name LIKE ? OR email LIKE ? OR subject LIKE ? )";
+            $kw = '%' . $filters['keyword'] . '%';
+            $params[] = $kw; $params[] = $kw; $params[] = $kw;
+        }
+        if ($filters['status'] !== '' && $filters['status'] !== null) {
+            $where .= " AND status = ?";
+            $params[] = $filters['status'];
+        }
+        $sql = "SELECT COUNT(*) as cnt FROM contacts " . $where;
+        $row = $this->db->fetchOne($sql, $params);
+        return $row ? (int)$row['cnt'] : 0;
+    }
+
+    public function getAdminContacts($filters = [], $limit = 20, $offset = 0) {
+        $where = "WHERE 1=1";
+        $params = [];
+        if (!empty($filters['keyword'])) {
+            $where .= " AND (name LIKE ? OR email LIKE ? OR subject LIKE ? )";
+            $kw = '%' . $filters['keyword'] . '%';
+            $params[] = $kw; $params[] = $kw; $params[] = $kw;
+        }
+        if ($filters['status'] !== '' && $filters['status'] !== null) {
+            $where .= " AND status = ?";
+            $params[] = $filters['status'];
+        }
+        $sql = "SELECT * FROM contacts " . $where . " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $params[] = (int)$limit;
+        $params[] = (int)$offset;
+        return $this->db->fetchAll($sql, $params);
+    }
 }
 ?>

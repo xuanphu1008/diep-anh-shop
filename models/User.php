@@ -220,5 +220,17 @@ class User {
         
         return $this->db->query($sql, $params);
     }
+
+    // Lock a customer (set status = 0)
+    public function lockCustomer($id) {
+        $sql = "UPDATE users SET status = 0 WHERE id = ? AND role = 'customer'";
+        return $this->db->query($sql, [$id]);
+    }
+
+    // Unlock a customer (set status = 1)
+    public function unlockCustomer($id) {
+        $sql = "UPDATE users SET status = 1 WHERE id = ? AND role = 'customer'";
+        return $this->db->query($sql, [$id]);
+    }
 }
 ?>
