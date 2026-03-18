@@ -27,6 +27,13 @@ function isStaff() {
 }
 
 /**
+ * Kiểm tra quyền chỉ staff (không phải admin)
+ */
+function isStaffOnly() {
+    return isLoggedIn() && isset($_SESSION['role']) && $_SESSION['role'] === 'staff';
+}
+
+/**
  * Yêu cầu đăng nhập
  */
 function requireLogin() {
@@ -55,6 +62,32 @@ function requireStaff() {
     if (!isStaff()) {
         setFlashMessage('error', 'Bạn không có quyền truy cập trang này');
         redirect(SITE_URL . '/index.php');
+    }
+}
+
+/**
+ * Kiểm tra người dùng là customer (không phải staff)
+ */
+function isCustomer() {
+    return isLoggedIn() && isset($_SESSION['role']) && $_SESSION['role'] === 'customer';
+}
+
+/**
+ * Kiểm tra customer đã đăng nhập
+ */
+function isCustomerLoggedIn() {
+    return isCustomer();
+}
+
+/**
+ * Yêu cầu đăng nhập với tư cách customer
+ */
+function requireCustomer() {
+    requireLogin();
+    if (!isCustomer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Chỉ khách hàng có thể thực hiện hành động này']);
+        exit();
     }
 }
 
@@ -1477,7 +1510,7 @@ function setConfig($key, $value) {
  * Check if development mode
  */
 function isDevelopment() {
-    return defined('ENVIRONMENT') && ENVIRONMENT === 'development';
+    return !defined('ENVIRONMENT') || (defined('ENVIRONMENT') && ENVIRONMENT === 'development');
 }
 
 /**

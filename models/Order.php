@@ -153,10 +153,36 @@ class Order {
             return ['success' => false, 'message' => 'Trạng thái không hợp lệ'];
         }
         
-        $sql = "UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?";
+        // Lấy thông tin đơn hàng hiện tại để kiểm tra
+        $order = $this->getOrderById($orderId);
+        if (!$order) {
+            return ['success' => false, 'message' => 'Đơn hàng không tồn tại'];
+        }
         
-        if ($this->db->query($sql, [$status, $orderId])) {
-            return ['success' => true, 'message' => 'Cập nhật trạng thái thành công'];
+        // Kiểm tra logic chuyển trạng thái hợp lệ
+        $currentStatus = $order['order_status'];
+        
+        // Cho phép chuyển về trạng thái trước đó hoặc bỏ qua nếu cùng trạng thái
+        if ($currentStatus === $status) {
+            return ['success' => true, 'message' => 'Trạng thái không thay đổi'];
+        }
+        
+        // Cảnh báo nhưng vẫn cho phép thay đổi từ cancelled (để admin có thể khôi phục nếu cần)
+        // Cảnh báo nhưng vẫn cho phép thay đổi từ delivered (để admin có thể điều chỉnh nếu cần)
+        
+        // Tự động cập nhật payment_status khi đơn hàng được giao (cho COD)
+        $paymentStatus = $order['payment_status'];
+        if ($status === 'delivered' && $order['payment_method'] === 'cod' && $paymentStatus === 'pending') {
+            // Tự động đánh dấu đã thanh toán khi giao hàng thành công (COD)
+            $sql = "UPDATE orders SET order_status = ?, payment_status = 'paid', updated_at = NOW() WHERE id = ?";
+            if ($this->db->query($sql, [$status, $orderId])) {
+                return ['success' => true, 'message' => 'Cập nhật trạng thái thành công. Đơn hàng COD đã được đánh dấu đã thanh toán.'];
+            }
+        } else {
+            $sql = "UPDATE orders SET order_status = ?, updated_at = NOW() WHERE id = ?";
+            if ($this->db->query($sql, [$status, $orderId])) {
+                return ['success' => true, 'message' => 'Cập nhật trạng thái thành công'];
+            }
         }
         
         return ['success' => false, 'message' => 'Cập nhật trạng thái thất bại'];
@@ -241,15 +267,17 @@ class Order {
             $year = date('Y');
         }
         
+        // Tính doanh thu theo thời điểm đơn hàng được giao (delivered)
+        // Chỉ tính đơn đã giao hàng (delivered) và đã thanh toán
         $sql = "SELECT 
-                MONTH(created_at) as month,
+                MONTH(updated_at) as month,
                 SUM(total) as revenue,
                 COUNT(*) as order_count
                 FROM orders 
-                WHERE YEAR(created_at) = ? 
+                WHERE YEAR(updated_at) = ? 
+                AND order_status = 'delivered'
                 AND payment_status = 'paid'
-                AND order_status != 'cancelled'
-                GROUP BY MONTH(created_at)
+                GROUP BY MONTH(updated_at)
                 ORDER BY month ASC";
         
         return $this->db->fetchAll($sql, [$year]);
@@ -260,16 +288,18 @@ class Order {
         if (!$month) $month = date('m');
         if (!$year) $year = date('Y');
         
+        // Tính doanh thu theo thời điểm đơn hàng được giao (delivered)
+        // Chỉ tính đơn đã giao hàng (delivered) và đã thanh toán
         $sql = "SELECT 
-                DATE(created_at) as date,
+                DATE(updated_at) as date,
                 SUM(total) as revenue,
                 COUNT(*) as order_count
                 FROM orders 
-                WHERE MONTH(created_at) = ? 
-                AND YEAR(created_at) = ?
+                WHERE MONTH(updated_at) = ? 
+                AND YEAR(updated_at) = ?
+                AND order_status = 'delivered'
                 AND payment_status = 'paid'
-                AND order_status != 'cancelled'
-                GROUP BY DATE(created_at)
+                GROUP BY DATE(updated_at)
                 ORDER BY date ASC";
         
         return $this->db->fetchAll($sql, [$month, $year]);
@@ -277,15 +307,17 @@ class Order {
     
     // Tổng doanh thu
     public function getTotalRevenue($startDate = null, $endDate = null) {
+        // Chỉ tính doanh thu từ đơn hàng đã được giao (delivered) và đã thanh toán
         $sql = "SELECT SUM(total) as total_revenue 
                 FROM orders 
-                WHERE payment_status = 'paid'
-                AND order_status != 'cancelled'";
+                WHERE order_status = 'delivered'
+                AND payment_status = 'paid'";
         
         $params = [];
         
         if ($startDate && $endDate) {
-            $sql .= " AND created_at BETWEEN ? AND ?";
+            // Nếu có khoảng thời gian, tính theo thời điểm giao hàng (updated_at khi delivered)
+            $sql .= " AND updated_at BETWEEN ? AND ?";
             $params = [$startDate, $endDate];
         }
         

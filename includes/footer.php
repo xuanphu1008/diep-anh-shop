@@ -51,3 +51,35 @@
         </div>
     </div>
 </footer>
+<script>
+// Safety: detect and remove blocking full-screen overlays that may prevent clicks
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        var children = Array.prototype.slice.call(document.body.children);
+        children.forEach(function(el) {
+            try {
+                var style = window.getComputedStyle(el);
+                var pos = style.position;
+                var z = parseInt(style.zIndex) || 0;
+                if ((pos === 'fixed' || pos === 'absolute') && z >= 9000) {
+                    var rect = el.getBoundingClientRect();
+                    if (rect.width >= window.innerWidth - 2 && rect.height >= window.innerHeight - 2) {
+                        // hide or disable pointer events for this overlay
+                        el.style.pointerEvents = 'none';
+                        el.style.display = 'none';
+                        console.warn('Auto-removed blocking overlay:', el);
+                    }
+                }
+            } catch(e) { /* ignore */ }
+        });
+    } catch(e) { console.error('Overlay check failed', e); }
+
+    // Global error handler to surface JS errors for debugging
+    window.addEventListener('error', function(ev) {
+        console.error('Global JS error caught:', ev.error || ev.message || ev);
+    });
+    window.addEventListener('unhandledrejection', function(ev) {
+        console.error('Unhandled promise rejection:', ev.reason || ev);
+    });
+});
+</script>

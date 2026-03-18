@@ -75,13 +75,51 @@ class Cart {
             return $this->removeFromCart($userId, $productId);
         }
         
-        $sql = "UPDATE cart SET quantity = ?, updated_at = NOW() 
-                WHERE user_id = ? AND product_id = ?";
+        // Kiểm tra sản phẩm có trong giỏ hàng không
+        $existing = $this->getCartItem($userId, $productId);
+        if (!$existing) {
+            return ['success' => false, 'message' => 'Sản phẩm không có trong giỏ hàng'];
+        }
         
-        if ($this->db->query($sql, [$quantity, $userId, $productId])) {
+        // Kiểm tra số lượng hiện tại
+        $currentQty = (int)$existing['quantity'];
+        $newQty = (int)$quantity;
+        
+        // Nếu số lượng không thay đổi, coi như thành công
+        if ($currentQty === $newQty) {
+            return ['success' => true, 'message' => 'Cập nhật số lượng thành công'];
+        }
+        
+        // Sử dụng ID của cart item để đảm bảo update đúng row
+        $cartId = (int)$existing['id'];
+        
+        // Bảng cart không có cột updated_at, chỉ update quantity
+        $sql = "UPDATE cart SET quantity = ? 
+                WHERE id = ? AND user_id = ?";
+        
+        $stmt = $this->db->query($sql, [$newQty, $cartId, $userId]);
+        
+        // Nếu query trả về false, có lỗi database
+        if ($stmt === false) {
+            error_log("UpdateQuantity failed - query returned false for cartId: $cartId, userId: $userId, productId: $productId, quantity: $newQty");
+            return ['success' => false, 'message' => 'Cập nhật số lượng thất bại. Lỗi database'];
+        }
+        
+        // Kiểm tra lại số lượng sau khi update để đảm bảo đã cập nhật thành công
+        $updated = $this->getCartItem($userId, $productId);
+        
+        if (!$updated) {
+            error_log("UpdateQuantity - item not found after update. cartId: $cartId, userId: $userId, productId: $productId, quantity: $newQty");
+            return ['success' => false, 'message' => 'Cập nhật số lượng thất bại. Sản phẩm không tồn tại'];
+        }
+        
+        $updatedQty = (int)$updated['quantity'];
+        
+        if ($updatedQty === $newQty) {
             return ['success' => true, 'message' => 'Cập nhật số lượng thành công'];
         } else {
-            return ['success' => false, 'message' => 'Cập nhật số lượng thất bại'];
+            error_log("UpdateQuantity - quantity mismatch. Expected: $newQty, Got: $updatedQty, cartId: $cartId, userId: $userId, productId: $productId");
+            return ['success' => false, 'message' => 'Cập nhật số lượng thất bại. Không thể cập nhật'];
         }
     }
 
@@ -116,14 +154,16 @@ class Cart {
         
         if ($existing) {
             // Cập nhật số lượng
-            $newQuantity = $existing['quantity'] + $quantity;
-            $sql = "UPDATE cart SET quantity = ?, updated_at = NOW() WHERE id = ?";
-            $result = $this->db->query($sql, [$newQuantity, $existing['id']]);
+            $newQuantity = (int)$existing['quantity'] + (int)$quantity;
+            $sql = "UPDATE cart SET quantity = ? WHERE id = ?";
+            $stmt = $this->db->query($sql, [$newQuantity, $existing['id']]);
+            $result = $stmt && $stmt->rowCount() > 0;
         } else {
             // Thêm mới
             $sql = "INSERT INTO cart (user_id, product_id, quantity, created_at) 
                     VALUES (?, ?, ?, NOW())";
-            $result = $this->db->query($sql, [$userId, $productId, $quantity]);
+            $stmt = $this->db->query($sql, [$userId, $productId, $quantity]);
+            $result = $stmt !== false;
         }
         
         if ($result) {
@@ -141,7 +181,7 @@ class Cart {
             return $this->removeFromCart($userId, $productId);
         }
         
-        $sql = "UPDATE cart SET quantity = ?, updated_at = NOW() 
+        $sql = "UPDATE cart SET quantity = ? 
                 WHERE user_id = ? AND product_id = ?";
         return $this->db->query($sql, [$quantity, $userId, $productId]);
     }
@@ -151,10 +191,11 @@ class Cart {
      */
     public function removeFromCart($userId, $productId) {
         $sql = "DELETE FROM cart WHERE user_id = ? AND product_id = ?";
-        if ($this->db->query($sql, [$userId, $productId])) {
+        $stmt = $this->db->query($sql, [$userId, $productId]);
+        if ($stmt && $stmt->rowCount() > 0) {
             return ['success' => true, 'message' => 'Đã xóa sản phẩm khỏi giỏ hàng'];
         } else {
-            return ['success' => false, 'message' => 'Có lỗi xảy ra khi xóa sản phẩm'];
+            return ['success' => false, 'message' => 'Sản phẩm không có trong giỏ hàng'];
         }
     }
     
@@ -163,7 +204,11 @@ class Cart {
      */
     public function clearCart($userId) {
         $sql = "DELETE FROM cart WHERE user_id = ?";
-        return $this->db->query($sql, [$userId]);
+        if ($this->db->query($sql, [$userId])) {
+            return ['success' => true, 'message' => 'Đã xóa toàn bộ giỏ hàng'];
+        } else {
+            return ['success' => false, 'message' => 'Có lỗi xảy ra khi xóa giỏ hàng'];
+        }
     }
     
     /**

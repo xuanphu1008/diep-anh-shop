@@ -33,11 +33,19 @@ class Database {
     // Thực thi query
     public function query($sql, $params = []) {
         try {
-            $stmt = $this->connect()->prepare($sql);
-            $stmt->execute($params);
+            $conn = $this->connect();
+            $stmt = $conn->prepare($sql);
+            $result = $stmt->execute($params);
+            
+            if ($result === false) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("Database Query Error - execute failed: " . print_r($errorInfo, true) . " SQL: $sql, Params: " . print_r($params, true));
+                return false;
+            }
+            
             return $stmt;
         } catch(PDOException $e) {
-            error_log("Database Query Error: " . $e->getMessage());
+            error_log("Database Query Exception: " . $e->getMessage() . " SQL: $sql, Params: " . print_r($params, true));
             return false;
         }
     }

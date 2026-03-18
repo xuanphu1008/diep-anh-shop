@@ -77,6 +77,16 @@ class Coupon {
             $discount = $coupon['value'];
         }
         
+        // Đảm bảo discount không vượt quá orderTotal để tránh giá âm
+        if ($discount > $orderTotal) {
+            $discount = $orderTotal;
+        }
+        
+        // Đảm bảo discount không âm
+        if ($discount < 0) {
+            $discount = 0;
+        }
+        
         return [
             'success' => true,
             'coupon_id' => $coupon['id'],
