@@ -1,128 +1,302 @@
 <?php
-// api/chatbot.php - Chatbot API cho tư vấn tự động
+// api/chatbot.php - Chatbot tư vấn tự động nâng cao
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../models/Product.php';
 
-// Lấy message từ request
 $input = json_decode(file_get_contents('php://input'), true);
-$message = isset($input['message']) ? strtolower(trim($input['message'])) : '';
+$rawMessage = isset($input['message']) ? trim($input['message']) : '';
 
-if (empty($message)) {
+if ($rawMessage === '') {
     echo json_encode([
         'success' => false,
         'message' => 'Vui lòng nhập nội dung câu hỏi'
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Initialize
+$normalizedMessage = normalizeMessage($rawMessage);
 $productModel = new Product();
-$response = '';
+$responseSegments = [];
 $suggestions = [];
 
-// Từ khóa và câu trả lời
-$keywords = [
-    // Chào hỏi
-    'xin chào' => 'Xin chào! Tôi là trợ lý ảo của Diệp Anh Computer. Tôi có thể giúp gì cho bạn?',
-    'hello' => 'Hello! Chào mừng bạn đến với Diệp Anh Computer. Bạn cần hỗ trợ gì?',
-    'hi' => 'Hi! Tôi có thể giúp bạn tìm laptop, PC gaming hoặc linh kiện máy tính. Bạn cần gì?',
-    
-    // Giới thiệu shop
-    'giới thiệu' => 'Diệp Anh Computer là cửa hàng chuyên cung cấp laptop, PC gaming và linh kiện máy tính chính hãng. Chúng tôi cam kết sản phẩm chất lượng, giá tốt và bảo hành uy tín.',
-    'shop' => 'Diệp Anh Computer - Địa chỉ tin cậy cho mọi nhu cầu về máy tính của bạn!',
-    
-    // Sản phẩm
-    'laptop' => 'Chúng tôi có nhiều dòng laptop: Gaming, Văn phòng, Đồ họa. Bạn quan tâm dòng nào?',
-    'gaming' => 'Laptop Gaming và PC Gaming của chúng tôi có cấu hình mạnh mẽ, phù hợp cho game thủ. Giá từ 15 triệu.',
-    'văn phòng' => 'Laptop văn phòng nhẹ, pin trâu, giá từ 10 triệu đồng.',
-    'pc' => 'PC Gaming của shop có nhiều cấu hình từ phổ thông đến cao cấp. Bạn có ngân sách bao nhiêu?',
-    'linh kiện' => 'Chúng tôi có đầy đủ linh kiện: RAM, SSD, VGA, CPU, Mainboard... Bạn cần linh kiện gì?',
-    
-    // Giá cả
-    'giá' => 'Sản phẩm của chúng tôi có nhiều mức giá phù hợp với mọi túi tiền. Bạn có thể cho tôi biết ngân sách của bạn?',
-    'rẻ' => 'Chúng tôi có nhiều sản phẩm giá tốt, thường xuyên có chương trình khuyến mãi. Hãy xem mục "Sản phẩm giảm giá"!',
-    'khuyến mãi' => 'Hiện tại shop đang có nhiều chương trình khuyến mãi hấp dẫn. Đăng ký tài khoản để nhận mã giảm giá 10%!',
-    'giảm giá' => 'Mục "Sản phẩm giảm giá" luôn được cập nhật. Đừng bỏ lỡ!',
-    
-    // Thanh toán
-    'thanh toán' => 'Shop hỗ trợ thanh toán COD và thanh toán online qua VNPay (ATM, Visa, MasterCard).',
-    'cod' => 'Bạn có thể chọn thanh toán khi nhận hàng (COD) khi đặt hàng.',
-    'vnpay' => 'Chúng tôi hỗ trợ thanh toán VNPay qua thẻ ATM, Visa, MasterCard rất tiện lợi.',
-    
-    // Giao hàng
-    'giao hàng' => 'Shop giao hàng toàn quốc, nội thành Hà Nội trong 24h. Miễn phí ship cho đơn từ 5 triệu.',
-    'ship' => 'Phí ship từ 20k - 50k tùy khu vực. Miễn phí ship cho đơn từ 5 triệu đồng.',
-    
-    // Bảo hành
-    'bảo hành' => 'Tất cả sản phẩm được bảo hành chính hãng từ 12-36 tháng tùy sản phẩm.',
-    'đổi trả' => 'Shop hỗ trợ đổi trả trong 7 ngày nếu sản phẩm lỗi từ nhà sản xuất.',
-    
-    // Liên hệ
-    'liên hệ' => 'Bạn có thể liên hệ qua Hotline: 0123.456.789 hoặc Email: admin@diepanhshop.com',
-    'số điện thoại' => 'Hotline: 0123.456.789 (8:00 - 22:00 hàng ngày)',
-    'email' => 'Email: admin@diepanhshop.com',
-    'địa chỉ' => 'Địa chỉ: Hà Nội, Việt Nam. Xem chi tiết tại trang Liên hệ.',
-    
-    // Hỗ trợ
-    'tư vấn' => 'Tôi sẵn sàng tư vấn cho bạn! Bạn cần tìm laptop hay PC gaming? Ngân sách bao nhiêu?',
-    'giúp' => 'Tôi có thể giúp bạn: Tìm sản phẩm, Tư vấn cấu hình, Hướng dẫn đặt hàng, Chính sách bảo hành.',
-    'hỗ trợ' => 'Tôi luôn sẵn sàng hỗ trợ bạn! Bạn cần giúp đỡ về vấn đề gì?'
+$faqIntents = [
+    'greeting' => [
+        'keywords' => ['xin chào', 'chào bạn', 'hello', 'hi', 'hey', 'good morning', 'good afternoon'],
+        'response' => 'Xin chào! Tôi là trợ lý ảo của Diệp Anh Computer. Tôi luôn sẵn sàng hỗ trợ bạn tìm sản phẩm hoặc giải đáp thắc mắc.'
+    ],
+    'about_shop' => [
+        'keywords' => ['giới thiệu', 'diệp anh', 'shop', 'cửa hàng', 'điệp anh'],
+        'response' => 'Diệp Anh Computer chuyên laptop, PC gaming và linh kiện chính hãng với giá tốt, bảo hành dài và giao hàng toàn quốc.'
+    ],
+    'promotion' => [
+        'keywords' => ['khuyến mãi', 'giảm giá', 'ưu đãi', 'mã giảm'],
+        'response' => 'Shop đang có nhiều chương trình khuyến mãi. Đăng ký tài khoản để nhận mã giảm giá tới 10% và theo dõi banner trang chủ để cập nhật ưu đãi mới.'
+    ],
+    'payment' => [
+        'keywords' => ['thanh toán', 'cod', 'vnpay', 'visa', 'mastercard'],
+        'response' => 'Bạn có thể thanh toán COD khi nhận hàng hoặc thanh toán online qua VNPay (ATM, Visa, MasterCard). Tất cả đều an toàn và tiện lợi.'
+    ],
+    'shipping' => [
+        'keywords' => ['giao hàng', 'ship', 'vận chuyển', 'phí ship'],
+        'response' => 'Shop giao hàng toàn quốc, nội thành Hà Nội trong 24h. Đơn từ 5 triệu được miễn phí ship, các đơn khác phí chỉ từ 20k.'
+    ],
+    'warranty' => [
+        'keywords' => ['bảo hành', 'đổi trả', 'bảo trì'],
+        'response' => 'Mọi sản phẩm đều được bảo hành chính hãng 12-36 tháng và hỗ trợ đổi trả trong 7 ngày nếu lỗi từ nhà sản xuất.'
+    ],
+    'contact' => [
+        'keywords' => ['liên hệ', 'số điện thoại', 'email', 'hotline', 'địa chỉ'],
+        'response' => 'Bạn có thể liên hệ Hotline 0123.456.789 (8:00 - 22:00) hoặc email admin@diepanhshop.com. Địa chỉ cửa hàng tại Hà Nội, Việt Nam.'
+    ],
+    'support' => [
+        'keywords' => ['tư vấn', 'hỗ trợ', 'giúp', 'cần hỗ trợ'],
+        'response' => 'Tôi có thể giúp bạn tìm sản phẩm phù hợp, tư vấn cấu hình, hướng dẫn đặt hàng hay cung cấp thông tin bảo hành. Cho tôi biết nhu cầu cụ thể nhé!'
+    ]
 ];
 
-// Tìm kiếm từ khóa trong message
-$found = false;
-foreach ($keywords as $keyword => $reply) {
-    if (strpos($message, $keyword) !== false) {
-        $response = $reply;
-        $found = true;
-        break;
-    }
+$productIntents = [
+    'laptop_gaming' => [
+        'keywords' => ['laptop gaming', 'gaming laptop', 'máy chơi game', 'rog', 'tuf gaming', 'laptop chơi game'],
+        'category_id' => 1,
+        'search_keyword' => 'laptop gaming',
+        'response' => 'Laptop Gaming của Diệp Anh tập trung vào hiệu năng đồ họa mạnh, màn hình tần số quét cao và hệ thống tản nhiệt tốt.'
+    ],
+    'laptop_office' => [
+        'keywords' => ['laptop văn phòng', 'laptop mỏng nhẹ', 'laptop cho sinh viên', 'laptop office'],
+        'category_id' => 2,
+        'search_keyword' => 'laptop văn phòng',
+        'response' => 'Laptop văn phòng ưu tiên thiết kế mỏng nhẹ, pin lâu và bảo mật tốt. Tôi sẽ gợi ý một vài mẫu phù hợp.'
+    ],
+    'pc_gaming' => [
+        'keywords' => ['pc gaming', 'máy tính bàn chơi game', 'pc đồ hoạ', 'build pc', 'pc mạnh'],
+        'category_id' => 3,
+        'search_keyword' => 'pc gaming',
+        'response' => 'PC Gaming của shop có cấu hình đa dạng từ tầm trung đến cao cấp, dễ nâng cấp và tối ưu airflow.'
+    ],
+    'components' => [
+        'keywords' => ['linh kiện', 'card đồ họa', 'gpu', 'vga', 'cpu', 'mainboard', 'ssd', 'ram'],
+        'category_id' => 4,
+        'search_keyword' => 'linh kiện máy tính',
+        'response' => 'Tôi có thể gợi ý nhanh các linh kiện phổ biến như RAM, SSD, card đồ họa và CPU chính hãng.'
+    ]
+];
+
+$faqMatch = matchIntent($normalizedMessage, $faqIntents);
+$productIntent = matchIntent($normalizedMessage, $productIntents);
+
+if ($faqMatch) {
+    $responseSegments[] = $faqMatch['response'];
 }
 
-// Tìm kiếm sản phẩm nếu không match keywords
-if (!$found) {
-    // Tìm sản phẩm theo tên
-    $products = $productModel->searchProducts($message, null, null, null);
-    
+if ($productIntent) {
+    $responseSegments[] = $productIntent['response'];
+}
+
+$budgetInfo = extractBudgetRange($normalizedMessage);
+if ($budgetInfo['description']) {
+    $responseSegments[] = $budgetInfo['description'];
+}
+
+$categoryId = $productIntent['category_id'] ?? null;
+$searchKeyword = $productIntent['search_keyword'] ?? $rawMessage;
+$productLimit = 4;
+$products = [];
+
+$shouldSearchProducts = $productIntent !== null || $budgetInfo['has_budget'] || containsSearchCue($normalizedMessage);
+
+if ($shouldSearchProducts) {
+    $products = $productModel->searchProducts(
+        $searchKeyword,
+        $categoryId,
+        $budgetInfo['min'],
+        $budgetInfo['max'],
+        $productLimit
+    );
+}
+
+if (empty($products)) {
+    $products = $productModel->searchProducts($rawMessage, $categoryId, null, null, $productLimit);
+}
+
+if (empty($products) && ($categoryId || $shouldSearchProducts)) {
+    $products = $productModel->getHotProducts($productLimit);
     if (!empty($products)) {
-        $response = "Tôi tìm thấy " . count($products) . " sản phẩm phù hợp:\n\n";
-        
-        $count = 0;
-        foreach ($products as $product) {
-            if ($count >= 3) break; // Chỉ hiển thị 3 sản phẩm đầu
-            
-            $price = $product['discount_price'] ?? $product['price'];
-            $suggestions[] = [
-                'id' => $product['id'],
-                'name' => $product['name'],
-                'price' => number_format($price) . 'đ',
-                'image' => UPLOAD_URL . $product['image'],
-                'url' => SITE_URL . '/product-detail.php?slug=' . $product['slug']
-            ];
-            
-            $count++;
-        }
-        
-        $response .= "Bạn có thể xem chi tiết các sản phẩm bên dưới.";
-    } else {
-        // Câu trả lời mặc định
-        $response = "Xin lỗi, tôi chưa hiểu câu hỏi của bạn. Bạn có thể hỏi tôi về:\n" .
-                   "• Sản phẩm laptop, PC gaming, linh kiện\n" .
-                   "• Giá cả và khuyến mãi\n" .
-                   "• Thanh toán và giao hàng\n" .
-                   "• Bảo hành và đổi trả\n" .
-                   "Hoặc liên hệ Hotline: 0123.456.789 để được hỗ trợ trực tiếp.";
+        $responseSegments[] = 'Tôi chưa tìm thấy đúng sản phẩm bạn nhắc tới, nhưng đây là các sản phẩm nổi bật bạn có thể cân nhắc:';
     }
 }
 
-// Trả về response
+if (!empty($products)) {
+    if (!$productIntent && !$faqMatch) {
+        $responseSegments[] = 'Tôi tìm thấy một số lựa chọn phù hợp, bạn tham khảo thêm nhé:';
+    }
+    $suggestions = formatProductsForChat($products);
+} else {
+    $responseSegments[] = 'Hiện tôi chưa tìm được sản phẩm khớp mô tả. Bạn thử cho tôi biết rõ hơn nhu cầu (loại sản phẩm, ngân sách, mục đích sử dụng) nhé!';
+}
+
+if (empty($responseSegments)) {
+    $responseSegments[] = 'Tôi có thể giúp bạn tìm laptop, PC gaming, linh kiện, thông tin giao hàng và bảo hành. Bạn cần hỗ trợ vấn đề nào?';
+}
+
+$responseText = implode("\n\n", uniqueSegments($responseSegments));
+
 echo json_encode([
     'success' => true,
-    'message' => $response,
+    'message' => $responseText,
     'products' => $suggestions,
     'timestamp' => time()
 ], JSON_UNESCAPED_UNICODE);
+
+/**
+ * Helpers
+ */
+function normalizeMessage($message) {
+    $message = mb_strtolower($message, 'UTF-8');
+    $message = preg_replace('/\s+/', ' ', $message);
+    return trim($message);
+}
+
+function matchIntent($message, $intents) {
+    foreach ($intents as $intent => $config) {
+        foreach ($config['keywords'] as $keyword) {
+            if (mb_strpos($message, $keyword) !== false) {
+                $config['intent'] = $intent;
+                return $config;
+            }
+        }
+    }
+    return null;
+}
+
+function containsSearchCue($message) {
+    $cues = ['gợi ý', 'goi y', 'tìm', 'tim', 'mua', 'muốn', 'muon', 'chọn', 'chon', 'cần', 'can', 'đề xuất', 'de xuat', 'phù hợp', 'phu hop', 'loại', 'loai'];
+    foreach ($cues as $cue) {
+        if (mb_strpos($message, $cue) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function extractBudgetRange($message) {
+    $result = [
+        'min' => null,
+        'max' => null,
+        'has_budget' => false,
+        'description' => ''
+    ];
+
+    if (preg_match('/(?:từ|tu)\s*(\d+(?:[.,]\d+)?)\s*(tr|triệu|trieu|m)?\s*(?:đến|den|-|tới|toi)\s*(\d+(?:[.,]\d+)?)/u', $message, $matches)) {
+        $result['min'] = convertBudgetValue($matches[1], $matches[2] ?? '');
+        $result['max'] = convertBudgetValue($matches[3], $matches[2] ?? '');
+    } elseif (preg_match('/(?:dưới|duoi|tối đa|toi da|<=|<)\s*(\d+(?:[.,]\d+)?)/u', $message, $matches)) {
+        $result['max'] = convertBudgetValue($matches[1], $matches[2] ?? '');
+    } elseif (preg_match('/(?:trên|tren|hơn|hon|>=|>|\btu\b)\s*(\d+(?:[.,]\d+)?)/u', $message, $matches)) {
+        $result['min'] = convertBudgetValue($matches[1], $matches[2] ?? '');
+    } elseif (preg_match('/(\d+(?:[.,]\d+)?)(?:\s*)(tr|triệu|trieu|m)/u', $message, $matches)) {
+        $value = convertBudgetValue($matches[1], $matches[2]);
+        $margin = 3000000;
+        $result['min'] = max(0, $value - $margin);
+        $result['max'] = $value + $margin;
+    }
+
+    if ($result['min'] !== null || $result['max'] !== null) {
+        $result['has_budget'] = true;
+        $minText = $result['min'] ? formatCurrency($result['min']) : '0đ';
+        $maxText = $result['max'] ? formatCurrency($result['max']) : 'không giới hạn';
+        if ($result['min'] && $result['max']) {
+            $result['description'] = "Tôi sẽ ưu tiên các sản phẩm trong tầm giá $minText - $maxText.";
+        } elseif ($result['max']) {
+            $result['description'] = "Tôi sẽ gợi ý các sản phẩm dưới $maxText.";
+        } else {
+            $result['description'] = "Tôi sẽ tìm các sản phẩm từ $minText trở lên.";
+        }
+    }
+
+    return $result;
+}
+
+function convertBudgetValue($value, $unit) {
+    $unit = trim(mb_strtolower($unit ?? '', 'UTF-8'));
+    $number = (float)str_replace([',', '.'], '', $value);
+
+    if (in_array($unit, ['tr', 'triệu', 'trieu', 'm', 'trđ', 'trd'], true)) {
+        $number *= 1000000;
+    } elseif (in_array($unit, ['k', 'ngàn', 'ngan'], true)) {
+        $number *= 1000;
+    } elseif ($number < 1000) {
+        // nếu người dùng chỉ nhập số (ví dụ: 15) thì mặc định là triệu
+        $number *= 1000000;
+    }
+
+    return (int)$number;
+}
+
+function formatCurrency($value) {
+    return number_format($value, 0, ',', '.') . 'đ';
+}
+
+function formatProductsForChat($products) {
+    $suggestions = [];
+    foreach ($products as $product) {
+        $price = $product['discount_price'] ?? $product['price'];
+        $suggestions[] = [
+            'id' => $product['id'],
+            'name' => $product['name'],
+            'price' => formatCurrency($price),
+            'image' => resolveProductImage($product['image'] ?? ''),
+            'url' => SITE_URL . '/product-detail.php?slug=' . $product['slug']
+        ];
+    }
+    return $suggestions;
+}
+function resolveProductImage($imagePath) {
+    $default = SITE_URL . '/assets/images/products/default.jpg';
+    if (empty($imagePath)) {
+        return $default;
+    }
+
+    if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+        return $imagePath;
+    }
+
+    $normalized = str_replace('\\', '/', ltrim($imagePath, '/'));
+    $basename = basename($normalized);
+    $siteRoot = realpath(__DIR__ . '/..') ?: __DIR__ . '/..';
+
+    $candidates = [
+        [
+            'path' => $siteRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized),
+            'url' => SITE_URL . '/' . $normalized
+        ],
+        [
+            'path' => rtrim(UPLOAD_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized),
+            'url' => rtrim(UPLOAD_URL, '/') . '/' . $normalized
+        ],
+        [
+            'path' => rtrim(UPLOAD_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'products' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $basename),
+            'url' => rtrim(UPLOAD_URL, '/') . '/products/' . $basename
+        ],
+        [
+            'path' => __DIR__ . '/../assets/images/products/' . str_replace('/', DIRECTORY_SEPARATOR, $basename),
+            'url' => SITE_URL . '/assets/images/products/' . $basename
+        ]
+    ];
+
+    foreach ($candidates as $candidate) {
+        if (file_exists($candidate['path'])) {
+            return $candidate['url'];
+        }
+    }
+
+    return $default;
+}
+
+function uniqueSegments($segments) {
+    return array_values(array_unique(array_filter($segments)));
+}
+
 ?>

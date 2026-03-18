@@ -37,6 +37,12 @@ try {
             break;
             
         case 'bulk_delete':
+            // Chỉ admin mới được xóa
+            if (!isAdmin()) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xóa banner']);
+                exit;
+            }
             foreach ($ids as $id) {
                 $bannerModel->deleteBanner($id);
             }

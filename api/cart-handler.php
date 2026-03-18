@@ -1,7 +1,19 @@
 <?php
 // api/cart-handler.php - API xử lý giỏ hàng
 
+// CORS headers - Cho phép cross-origin requests
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+header('Access-Control-Allow-Origin: ' . $origin);
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json');
+
+// Xử lý preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 // Khởi động session trước khi include config
 if (session_status() === PHP_SESSION_NONE) {
@@ -29,260 +41,323 @@ try {
     exit;
 }
 
-// Debug log
-error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
-error_log("POST data: " . json_encode($_POST));
-error_log("GET data: " . json_encode($_GET));
-
-// Lấy action từ request
-$action = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-} else {
-    $action = $_GET['action'] ?? '';
-}
-
-// Nếu action vẫn rỗng, thử lấy từ input stream
-if (empty($action)) {
-    $input = file_get_contents('php://input');
-    error_log("Input stream: " . $input);
-    if (!empty($input)) {
-        $data = json_decode($input, true);
-        if ($data && isset($data['action'])) {
-            $action = $data['action'];
-        }
-    }
-}
-
-error_log("Action: " . $action);
-
-// Lấy các tham số khác
-$productId = 0;
-$quantity = 1;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $productId = (int)($_POST['product_id'] ?? 0);
-    $quantity = (int)($_POST['quantity'] ?? 1);
-} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $productId = (int)($_GET['product_id'] ?? 0);
-    $quantity = (int)($_GET['quantity'] ?? 1);
-}
-
-// Nếu không lấy được từ POST/GET, thử từ input stream
-if ($productId == 0 && !empty($input)) {
-    $data = json_decode($input, true);
-    if ($data) {
-        $productId = (int)($data['product_id'] ?? 0);
-        $quantity = (int)($data['quantity'] ?? 1);
-    }
-}
-
-// Kiểm tra người dùng đăng nhập
+$action = $_GET['action'] ?? $_POST['action'] ?? null;
 $userId = $_SESSION['user_id'] ?? null;
+$method = $_SERVER['REQUEST_METHOD'];
 
-// Nếu action rỗng, không làm gì và trả về lỗi nhưng không log
-if (empty($action)) {
-    error_log("ERROR: Action is empty!");
-    error_log("POST: " . json_encode($_POST));
-    error_log("GET: " . json_encode($_GET));
-    error_log("Input stream: " . $input);
+if (!$action) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Missing action parameter']);
+    echo json_encode(['success' => false, 'message' => 'Hành động không hợp lệ']);
     exit;
 }
 
-// Set error handler để catch lỗi PHP
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    error_log("PHP Error [$errno]: $errstr in $errfile on line $errline");
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Lỗi PHP: ' . $errstr]);
-    exit;
-});
-
+// Các hành động liên quan đến giỏ hàng
 switch ($action) {
-    case 'add':
-        // productId và quantity đã được lấy ở trên
+    case 'get':
+        // Lấy giỏ hàng từ session hoặc database
+        $cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
+        echo json_encode(['success' => true, 'cart' => $cart]);
+        break;
 
+    case 'add':
+        // Thêm sản phẩm vào giỏ hàng
+        $productId = intval($_POST['product_id'] ?? 0);
+        $quantity = intval($_POST['quantity'] ?? 1);
+        
         if ($productId <= 0 || $quantity <= 0) {
+            http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
             exit;
         }
 
-        // Kiểm tra sản phẩm tồn tại
         $product = $productModel->getProductById($productId);
-        if (!$product || $product['is_active'] == 0 || $product['deleted_at'] != null) {
-            echo json_encode(['success' => false, 'message' => 'Sản phẩm không tồn tại hoặc không còn bán']);
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Sản phẩm không tìm thấy']);
             exit;
         }
 
-        // --- Logic kiểm tra tồn kho ĐÃ SỬA ---
-        $currentCartQuantity = 0;
+        // Kiểm tra sản phẩm có đang bán và còn hàng không
+        if (!$product['is_active'] || $product['deleted_at'] !== null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Sản phẩm không khả dụng']);
+            exit;
+        }
+
+        // Nếu user đã đăng nhập, lưu vào database
         if ($userId) {
-            // Lấy số lượng hiện có trong giỏ hàng DB
+            // Kiểm tra số lượng hiện tại trong giỏ hàng
             $existingItem = $cartModel->getCartItem($userId, $productId);
-            if ($existingItem) {
-                $currentCartQuantity = $existingItem['quantity'];
+            $currentQuantity = ($existingItem && isset($existingItem['quantity'])) ? (int)$existingItem['quantity'] : 0;
+            $newTotalQuantity = $currentQuantity + $quantity;
+            
+            // Kiểm tra tồn kho với tổng số lượng mới (chỉ kiểm tra nếu tồn kho > 0)
+            if ($product['quantity'] > 0 && $product['quantity'] < $newTotalQuantity) {
+                http_response_code(400);
+                $available = max(0, $product['quantity'] - $currentQuantity);
+                if ($available <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Sản phẩm đã hết hàng. Bạn đã có ' . $currentQuantity . ' sản phẩm trong giỏ hàng']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Số lượng sản phẩm không đủ. Bạn có thể thêm tối đa ' . $available . ' sản phẩm nữa']);
+                }
+                exit;
             }
-        } else {
-            // Lấy số lượng hiện có trong giỏ hàng session
-            if (!isset($_SESSION['cart'])) {
-                 $_SESSION['cart'] = []; // Khởi tạo nếu chưa có
+            
+            // Kiểm tra nếu tồn kho = 0
+            if ($product['quantity'] <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Sản phẩm đã hết hàng']);
+                exit;
             }
-            $currentCartQuantity = $_SESSION['cart'][$productId] ?? 0;
-        }
-        $finalQuantity = $currentCartQuantity + $quantity; // Số lượng cuối cùng sau khi thêm
-
-        if ($product['quantity'] < $finalQuantity) {
-             echo json_encode(['success' => false, 'message' => "Sản phẩm không đủ số lượng (Chỉ còn {$product['quantity']} trong kho)"]);
-             exit;
-        }
-        // --- Kết thúc kiểm tra tồn kho ---
-
-        // Thêm vào giỏ hàng
-        if ($userId) {
-            // User đã đăng nhập - lưu vào database
+            
             $result = $cartModel->addToCart($userId, $productId, $quantity);
+            if ($result['success']) {
+                $cartCount = $cartModel->countCartItems($userId);
+                echo json_encode(['success' => true, 'message' => $result['message'], 'cart_count' => $cartCount]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => $result['message']]);
+            }
         } else {
-            // User chưa đăng nhập - lưu vào session
-            $result = $cartModel->addToSessionCart($productId, $quantity);
-        }
-
-        // Thêm số lượng giỏ hàng vào response để JS cập nhật icon ngay lập tức
-        $newCartCount = $cartModel->countCartItems($userId); // Sửa tên method đúng
-        $result['cart_count'] = $newCartCount; // Thêm count vào kết quả trả về
-
-        echo json_encode($result);
-        break;
-
-    case 'update':
-        // productId và quantity đã được lấy ở trên
-        if ($productId <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu sản phẩm không hợp lệ']);
-            exit;
-        }
-        if ($quantity < 0) { // Số lượng không được âm, nếu là 0 thì nên là remove
-             echo json_encode(['success' => false, 'message' => 'Số lượng không hợp lệ']);
-             exit;
-        }
-
-         // Kiểm tra tồn kho trước khi cập nhật
-         $product = $productModel->getProductById($productId);
-         if (!$product) {
-             echo json_encode(['success' => false, 'message' => 'Sản phẩm không tồn tại']);
-             exit;
-         }
-         if ($product['quantity'] < $quantity) {
-              echo json_encode(['success' => false, 'message' => "Sản phẩm không đủ số lượng (Chỉ còn {$product['quantity']} trong kho)"]);
-              exit;
-         }
-
-
-        if ($userId) {
-            // Dùng hàm updateQuantity đã có trong Cart.php
-             $result = $cartModel->updateQuantity($userId, $productId, $quantity);
-        } else {
-            // Cập nhật session trực tiếp
+            // Chưa đăng nhập, lưu vào session
             if (!isset($_SESSION['cart'])) {
                 $_SESSION['cart'] = [];
             }
-             if ($quantity > 0) {
-                 $_SESSION['cart'][$productId] = $quantity;
-                 $result = ['success' => true, 'message' => 'Cập nhật giỏ hàng thành công'];
-             } else {
-                 // Nếu quantity là 0, xóa khỏi session
-                 unset($_SESSION['cart'][$productId]);
-                 $result = ['success' => true, 'message' => 'Đã xóa khỏi giỏ hàng'];
-             }
+
+            // Kiểm tra số lượng hiện tại trong session cart
+            $currentQuantity = 0;
+            foreach ($_SESSION['cart'] as $item) {
+                if (isset($item['id']) && (int)$item['id'] === (int)$productId) {
+                    $currentQuantity = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+                    break;
+                }
+            }
+            
+            $newTotalQuantity = $currentQuantity + $quantity;
+            
+            // Kiểm tra tồn kho với tổng số lượng mới (chỉ kiểm tra nếu tồn kho > 0)
+            if ($product['quantity'] > 0 && $product['quantity'] < $newTotalQuantity) {
+                http_response_code(400);
+                $available = max(0, $product['quantity'] - $currentQuantity);
+                if ($available <= 0) {
+                    echo json_encode(['success' => false, 'message' => 'Sản phẩm đã hết hàng. Bạn đã có ' . $currentQuantity . ' sản phẩm trong giỏ hàng']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Số lượng sản phẩm không đủ. Bạn có thể thêm tối đa ' . $available . ' sản phẩm nữa']);
+                }
+                exit;
+            }
+            
+            // Kiểm tra nếu tồn kho = 0
+            if ($product['quantity'] <= 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Sản phẩm đã hết hàng']);
+                exit;
+            }
+
+            $found = false;
+            foreach ($_SESSION['cart'] as &$item) {
+                if (isset($item['id']) && (int)$item['id'] === (int)$productId) {
+                    $item['quantity'] = (int)($item['quantity'] ?? 0) + $quantity;
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                $_SESSION['cart'][] = [
+                    'id' => $productId,
+                    'name' => $product['name'] ?? '',
+                    'price' => $product['price'] ?? 0,
+                    'image' => $product['image'] ?? '',
+                    'quantity' => $quantity
+                ];
+            }
+
+            $cartCount = 0;
+            foreach ($_SESSION['cart'] as $item) {
+                $cartCount += $item['quantity'] ?? 1;
+            }
+            echo json_encode(['success' => true, 'message' => 'Thêm vào giỏ hàng thành công', 'cart_count' => $cartCount]);
         }
-        echo json_encode($result);
         break;
 
     case 'remove':
-        // productId đã được lấy ở trên
+        // Xóa sản phẩm khỏi giỏ hàng
+        $productId = intval($_POST['product_id'] ?? 0);
+        
         if ($productId <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu sản phẩm không hợp lệ']);
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
             exit;
         }
 
+        // Nếu user đã đăng nhập, xóa từ database
         if ($userId) {
             $result = $cartModel->removeFromCart($userId, $productId);
-        } else {
-            // Xóa khỏi session trực tiếp
-            if (isset($_SESSION['cart'][$productId])) {
-                unset($_SESSION['cart'][$productId]);
-                $result = ['success' => true, 'message' => 'Đã xóa khỏi giỏ hàng'];
+            if ($result['success']) {
+                $cartCount = $cartModel->countCartItems($userId);
+                echo json_encode(['success' => true, 'message' => $result['message'], 'cart_count' => $cartCount]);
             } else {
-                $result = ['success' => false, 'message' => 'Sản phẩm không có trong giỏ hàng'];
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => $result['message']]);
             }
+        } else {
+            // Chưa đăng nhập, xóa từ session
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+
+            $_SESSION['cart'] = array_values(array_filter($_SESSION['cart'], function($item) use ($productId) {
+                return !isset($item['id']) || (int)$item['id'] !== (int)$productId;
+            }));
+
+            $cartCount = 0;
+            foreach ($_SESSION['cart'] as $item) {
+                $cartCount += $item['quantity'] ?? 1;
+            }
+            echo json_encode(['success' => true, 'message' => 'Xóa khỏi giỏ hàng thành công', 'cart_count' => $cartCount]);
         }
-        echo json_encode($result);
+        break;
+
+    case 'update':
+        // Cập nhật số lượng sản phẩm
+        $productId = intval($_POST['product_id'] ?? 0);
+        $quantity = intval($_POST['quantity'] ?? 1);
+        
+        // Log để debug
+        error_log("Update cart - productId: $productId, quantity: $quantity, userId: " . ($userId ?? 'null'));
+        
+        if ($productId <= 0 || $quantity < 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+            exit;
+        }
+
+        // Kiểm tra tồn kho
+        $product = $productModel->getProductById($productId);
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Sản phẩm không tìm thấy']);
+            exit;
+        }
+
+        // Kiểm tra sản phẩm có đang bán không
+        if (!$product['is_active'] || $product['deleted_at'] !== null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Sản phẩm không khả dụng']);
+            exit;
+        }
+
+        // Nếu user đã đăng nhập, cập nhật database
+        if ($userId) {
+            // Kiểm tra sản phẩm có trong giỏ hàng không
+            $existingItem = $cartModel->getCartItem($userId, $productId);
+            
+            if ($quantity === 0) {
+                $result = $cartModel->removeFromCart($userId, $productId);
+            } else if (!$existingItem) {
+                // Nếu không có trong giỏ và quantity > 0, thêm mới
+                // Kiểm tra tồn kho trước khi thêm
+                if ($product['quantity'] < $quantity) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Số lượng sản phẩm không đủ. Chỉ còn ' . $product['quantity'] . ' sản phẩm']);
+                    exit;
+                }
+                $result = $cartModel->addToCart($userId, $productId, $quantity);
+            } else {
+                // Cập nhật số lượng - kiểm tra tồn kho với số lượng mới
+                if ($product['quantity'] < $quantity) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Số lượng sản phẩm không đủ. Chỉ còn ' . $product['quantity'] . ' sản phẩm']);
+                    exit;
+                }
+                $result = $cartModel->updateQuantity($userId, $productId, $quantity);
+            }
+            
+            if ($result['success']) {
+                $cartCount = $cartModel->countCartItems($userId);
+                echo json_encode(['success' => true, 'message' => $result['message'], 'cart_count' => $cartCount]);
+            } else {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Cập nhật số lượng thất bại']);
+            }
+        } else {
+            // Chưa đăng nhập, cập nhật session
+            if (!isset($_SESSION['cart'])) {
+                $_SESSION['cart'] = [];
+            }
+
+            // Kiểm tra tồn kho trước khi cập nhật
+            if ($quantity > 0 && $product['quantity'] < $quantity) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Số lượng sản phẩm không đủ. Chỉ còn ' . $product['quantity'] . ' sản phẩm']);
+                exit;
+            }
+
+            if ($quantity === 0) {
+                $_SESSION['cart'] = array_values(array_filter($_SESSION['cart'], function($item) use ($productId) {
+                    return !isset($item['id']) || (int)$item['id'] !== (int)$productId;
+                }));
+            } else {
+                $found = false;
+                foreach ($_SESSION['cart'] as &$item) {
+                    if (isset($item['id']) && (int)$item['id'] === (int)$productId) {
+                        $item['quantity'] = (int)$quantity;
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $_SESSION['cart'][] = [
+                        'id' => $productId,
+                        'name' => $product['name'] ?? '',
+                        'price' => $product['price'] ?? 0,
+                        'image' => $product['image'] ?? '',
+                        'quantity' => $quantity
+                    ];
+                }
+            }
+
+            $cartCount = 0;
+            foreach ($_SESSION['cart'] as $item) {
+                $cartCount += $item['quantity'] ?? 1;
+            }
+            echo json_encode(['success' => true, 'message' => 'Cập nhật thành công', 'cart_count' => $cartCount]);
+        }
         break;
 
     case 'clear':
         // Xóa toàn bộ giỏ hàng
         if ($userId) {
-            $cartModel->clearCart($userId);
+            $result = $cartModel->clearCart($userId);
+            if (is_array($result) && isset($result['message'])) {
+                echo json_encode(['success' => true, 'message' => $result['message']]);
+            } else {
+                echo json_encode(['success' => true, 'message' => 'Giỏ hàng đã được làm trống']);
+            }
         } else {
-            $_SESSION['cart'] = []; // Xóa session cart
+            $_SESSION['cart'] = [];
+            echo json_encode(['success' => true, 'message' => 'Giỏ hàng đã được làm trống']);
         }
-        echo json_encode(['success' => true, 'message' => 'Đã xóa toàn bộ giỏ hàng']);
         break;
 
     case 'count':
-        // Đếm số lượng sản phẩm trong giỏ (Dùng GET)
-        $count = 0;
+        // Trả về số lượng sản phẩm trong giỏ hàng
         if ($userId) {
-            $count = $cartModel->countCartItems($userId); // Sửa tên method đúng
+            $count = $cartModel->countCartItems($userId);
+            echo json_encode(['success' => true, 'count' => $count]);
         } else {
-             $cart = $_SESSION['cart'] ?? [];
-             $count = array_sum($cart); // Đếm tổng số lượng item trong session
+            $cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
+            $count = 0;
+            foreach ($cart as $item) {
+                $count += $item['quantity'] ?? 1;
+            }
+            echo json_encode(['success' => true, 'count' => $count]);
         }
-        echo json_encode(['success' => true, 'count' => $count]);
-        break;
-
-    case 'get':
-        // Lấy giỏ hàng (Dùng GET)
-         if ($userId) {
-             // Hàm getCartDetails cần được kiểm tra hoặc tạo trong Cart.php
-             // Giả sử nó trả về đúng cấu trúc {items: [], subtotal: n, item_count: m}
-             $cart = $cartModel->getCartDetails($userId); // Cần đảm bảo hàm này tồn tại và đúng
-             if ($cart === null) { // Xử lý trường hợp getCartDetails trả về null nếu lỗi
-                  $cart = ['items' => [], 'subtotal' => 0, 'item_count' => 0];
-             }
-         } else {
-             // Lấy từ session và định dạng lại
-             $items = [];
-             $subtotal = 0;
-             $sessionCart = $_SESSION['cart'] ?? [];
-             foreach ($sessionCart as $pid => $qty) {
-                  $product = $productModel->getProductById($pid);
-                  if ($product) {
-                      $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
-                      $items[] = [
-                           'product_id' => $pid,
-                           'name' => $product['name'],
-                           'slug' => $product['slug'],
-                           'image' => getProductImage($product['image']), // Dùng helper function
-                           'price' => $product['price'],
-                           'discount_price' => $product['discount_price'],
-                           'final_price' => $finalPrice,
-                           'quantity' => $qty,
-                           'stock_quantity' => $product['quantity'], // Cần cột này trong DB và model
-                           'total' => $finalPrice * $qty
-                      ];
-                      $subtotal += $finalPrice * $qty;
-                  }
-             }
-             $cart = ['items' => $items, 'subtotal' => $subtotal, 'item_count' => count($items)];
-         }
-        echo json_encode(['success' => true, 'cart' => $cart]);
         break;
 
     default:
-        echo json_encode([
-            'success' => false, 
-            'message' => "Action không hợp lệ: '$action'. Các action hợp lệ: add, update, remove, clear, count, get"
-        ]);
-        break;
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Hành động không được hỗ trợ']);
 }
 ?>

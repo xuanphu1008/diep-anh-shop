@@ -29,6 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['edit'])) {
 }
 
 if (isset($_GET['delete'])) {
+    if (!isAdmin()) {
+        setFlashMessage('error', 'Bạn không có quyền xóa banner');
+        redirect('index.php');
+    }
     $bannerModel->deleteBanner($_GET['delete']);
     setFlashMessage('success', 'Xóa banner thành công');
     redirect('index.php');
@@ -80,11 +84,13 @@ include __DIR__ . '/../layout.php';
             </select>
             <button class="btn btn-primary">Lọc</button>
         </form>
-        <div class="d-flex gap-10">
-            <button id="bulkShowBtn" class="btn btn-success">Hiển thị</button>
-            <button id="bulkHideBtn" class="btn btn-warning">Ẩn</button>
-            <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
-        </div>
+                <div class="d-flex gap-10">
+                    <button id="bulkShowBtn" class="btn btn-success">Hiển thị</button>
+                    <button id="bulkHideBtn" class="btn btn-warning">Ẩn</button>
+                    <?php if (isAdmin()): ?>
+                    <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
+                    <?php endif; ?>
+                </div>
     </div>
     <?php if ($flash = getFlashMessage()): ?>
         <div class="alert alert-<?php echo $flash['type']; ?>">{{ $flash['message'] }}</div>
@@ -110,12 +116,17 @@ include __DIR__ . '/../layout.php';
                         <td><input type="checkbox" name="ids[]" value="<?php echo $b['id']; ?>"></td>
                         <td><?php echo $b['id']; ?></td>
                         <td><strong><?php echo htmlspecialchars($b['title']); ?></strong></td>
-                        <td><img src="<?php echo $b['image'] ? 'uploads/banners/' . $b['image'] : 'assets/images/placeholder.jpg'; ?>" style="width:80px;height:60px;object-fit:cover;border-radius:6px;"></td>
+                        <td>
+                            <img src="<?php echo getBannerImage($b['image']); ?>" 
+                             style="width:80px; height:60px; object-fit:cover; border-radius:6px;">
+                        </td>
                         <td><?php echo htmlspecialchars($b['link']); ?></td>
                         <td><?php echo $b['status'] ? '<span class="badge badge-success">Hiển thị</span>' : '<span class="badge badge-secondary">Ẩn</span>'; ?></td>
                         <td>
                             <a href="?edit=<?php echo $b['id']; ?>" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                            <?php if (isAdmin()): ?>
                             <a href="?delete=<?php echo $b['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa banner?')"><i class="fas fa-trash"></i></a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

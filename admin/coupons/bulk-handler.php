@@ -21,6 +21,11 @@ $success = true;
 foreach ($ids as $id) {
     $id = (int)$id;
     if ($action === 'bulk_delete') {
+        // Chỉ admin mới được xóa
+        if (!isAdmin()) {
+            echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xóa mã giảm giá']);
+            exit;
+        }
         $couponModel->deleteCoupon($id);
         $success = $success && true;
     } elseif ($action === 'bulk_activate') {

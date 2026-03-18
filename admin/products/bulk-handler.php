@@ -25,6 +25,11 @@ if (!is_array($ids) || empty($ids)) {
 foreach ($ids as $id) {
     $id = intval($id);
     if ($action === 'bulk_delete') {
+        // Chỉ admin mới được xóa
+        if (!isAdmin()) {
+            echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xóa sản phẩm']);
+            exit;
+        }
         $productModel->deleteProduct($id);
     } elseif ($action === 'bulk_activate') {
         $productModel->activateProduct($id);

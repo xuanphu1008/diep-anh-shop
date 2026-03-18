@@ -59,8 +59,8 @@ include __DIR__ . '/../layout.php';
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                 <div class="stat-card blue">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 14px; color: var(--admin-text-light);">Tổng doanh thu</div>
+                        <div style="font-size: 28px; font-weight: bold; color: var(--admin-text); margin-top: 5px;">
                             <?php echo formatCurrency($totalRevenue); ?>
                         </div>
                     </div>
@@ -68,8 +68,8 @@ include __DIR__ . '/../layout.php';
                 </div>
                 <div class="stat-card green">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Doanh thu tháng <?php echo $month; ?></div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 14px; color: var(--admin-text-light);">Doanh thu tháng <?php echo $month; ?></div>
+                        <div style="font-size: 28px; font-weight: bold; color: var(--admin-text); margin-top: 5px;">
                             <?php 
                             $monthTotal = 0;
                             foreach ($dailyRevenue as $day) {
@@ -83,8 +83,8 @@ include __DIR__ . '/../layout.php';
                 </div>
                 <div class="stat-card orange">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Số đơn tháng <?php echo $month; ?></div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 14px; color: var(--admin-text-light);">Số đơn tháng <?php echo $month; ?></div>
+                        <div style="font-size: 28px; font-weight: bold; color: var(--admin-text); margin-top: 5px;">
                             <?php 
                             $monthOrders = 0;
                             foreach ($dailyRevenue as $day) {
@@ -130,7 +130,7 @@ include __DIR__ . '/../layout.php';
                                 </div>
                             </td>
                             <td><strong><?php echo $product['total_sold']; ?></strong></td>
-                            <td><strong style="color: #e74c3c;"><?php echo formatCurrency($product['total_revenue']); ?></strong></td>
+                            <td><strong style="color: var(--admin-primary);"><?php echo formatCurrency($product['total_revenue']); ?></strong></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -154,8 +154,8 @@ include __DIR__ . '/../layout.php';
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
                 data: monthlyRevenues,
-                backgroundColor: 'rgba(52, 152, 219, 0.8)',
-                borderColor: 'rgba(52, 152, 219, 1)',
+                backgroundColor: 'rgba(50, 133, 166, 0.8)',
+                borderColor: 'rgba(50, 133, 166, 1)',
                 borderWidth: 1
             }]
         },
@@ -184,8 +184,8 @@ include __DIR__ . '/../layout.php';
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
                 data: dailyRevenues,
-                backgroundColor: 'rgba(46, 204, 113, 0.2)',
-                borderColor: 'rgba(46, 204, 113, 1)',
+                backgroundColor: 'rgba(83, 157, 166, 0.2)',
+                borderColor: 'rgba(83, 157, 166, 1)',
                 borderWidth: 2,
                 fill: true
             }]

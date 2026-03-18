@@ -73,7 +73,9 @@ include __DIR__ . '/../layout.php';
                 <div class="d-flex gap-10">
                     <button id="bulkActivateBtn" class="btn btn-success"><i class="fas fa-check"></i> Kích hoạt</button>
                     <button id="bulkDeactivateBtn" class="btn btn-warning"><i class="fas fa-ban"></i> Ngừng bán</button>
+                    <?php if (isAdmin()): ?>
                     <button id="bulkDeleteBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Xóa</button>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -112,13 +114,16 @@ include __DIR__ . '/../layout.php';
                                 <?php endif; ?>
                             </td>
                             <td><?php echo htmlspecialchars($product['category_name']); ?></td>
-                            <td><?php echo $product['discount_price'] ? ('<del>'.formatCurrency($product['price']).'</del><br><strong style="color:#e74c3c;">'.formatCurrency($product['discount_price']).'</strong>') : '<strong>'.formatCurrency($product['price']).'</strong>'; ?></td>
+                            <td><?php echo $product['discount_price'] ? ('<del>'.formatCurrency($product['price']).'</del><br><strong style="color:var(--admin-danger);">'.formatCurrency($product['discount_price']).'</strong>') : '<strong>'.formatCurrency($product['price']).'</strong>'; ?></td>
                             <td><?php echo $product['is_active'] ? '<span class="badge badge-success">Đang bán</span>' : '<span class="badge badge-secondary">Ngừng bán</span>'; ?></td>
-                            <td><span style="color: <?php echo $product['quantity'] > 0 ? '#27ae60' : '#e74c3c'; ?>;"><?php echo $product['quantity']; ?></span></td>
+                            <td><span style="color: <?php echo $product['quantity'] > 0 ? 'var(--admin-success)' : 'var(--admin-danger)'; ?>;"><?php echo $product['quantity']; ?></span></td>
                             <td>
+                                <a href="detail.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-info" title="Chi tiết"><i class="fas fa-eye"></i></a>
                                 <a href="edit.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-primary" title="Sửa"><i class="fas fa-edit"></i></a>
                                 <a href="import.php?id=<?php echo $product['id']; ?>" class="btn btn-sm btn-success" title="Nhập hàng"><i class="fas fa-download"></i></a>
+                                <?php if (isAdmin()): ?>
                                 <a href="?delete=<?php echo $product['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa?')" title="Xóa"><i class="fas fa-trash"></i></a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -167,33 +172,45 @@ include __DIR__ . '/../layout.php';
             }).catch(()=> alert('Lỗi mạng'));
         }
 
-        document.getElementById('bulkActivateBtn')?.addEventListener('click', () => doBulkAction('bulk_activate'));
-        document.getElementById('bulkDeactivateBtn')?.addEventListener('click', () => doBulkAction('bulk_deactivate'));
-        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => doBulkAction('bulk_delete'));
+        var bulkActivateBtn = document.getElementById('bulkActivateBtn');
+        if (bulkActivateBtn) {
+            bulkActivateBtn.addEventListener('click', function(){ doBulkAction('bulk_activate'); });
+        }
+        var bulkDeactivateBtn = document.getElementById('bulkDeactivateBtn');
+        if (bulkDeactivateBtn) {
+            bulkDeactivateBtn.addEventListener('click', function(){ doBulkAction('bulk_deactivate'); });
+        }
+        var bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', function(){ doBulkAction('bulk_delete'); });
+        }
 
         // Export current visible rows to CSV
-        document.getElementById('exportProductsBtn')?.addEventListener('click', function(){
-            const rows = Array.from(document.querySelectorAll('.data-table tbody tr'));
-            let csv = 'ID,Name,Category,Price,Quantity,Status\n';
-            rows.forEach(r=>{
-                const cols = r.querySelectorAll('td');
-                if (!cols.length) return;
-                const id = cols[1].innerText.trim();
-                const name = '"' + cols[3].innerText.trim().replace(/"/g,'""') + '"';
-                const cat = cols[4].innerText.trim();
-                const price = cols[5].innerText.trim().replace(/\n/g,' ');
-                const qty = cols[6].innerText.trim();
-                const status = cols[7].innerText.trim();
-                csv += [id, name, cat, price, qty, status].join(',') + '\n';
+        var exportProductsBtn = document.getElementById('exportProductsBtn');
+        if (exportProductsBtn) {
+            exportProductsBtn.addEventListener('click', function(){
+                const rows = Array.from(document.querySelectorAll('.data-table tbody tr'));
+                let csv = 'ID,Name,Category,Price,Quantity,Status\n';
+                rows.forEach(r=>{
+                    const cols = r.querySelectorAll('td');
+                    if (!cols.length) return;
+                    const id = cols[1].innerText.trim();
+                    const name = '"' + cols[3].innerText.trim().replace(/"/g,'""') + '"';
+                    const cat = cols[4].innerText.trim();
+                    const price = cols[5].innerText.trim().replace(/\n/g,' ');
+                    const qty = cols[6].innerText.trim();
+                    const status = cols[7].innerText.trim();
+                    csv += [id, name, cat, price, qty, status].join(',') + '\n';
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'products_export.csv';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
             });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'products_export.csv';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        });
+        }
     });
     </script>
 
@@ -202,9 +219,6 @@ include __DIR__ . '/../layout.php';
 
 <style>
 .data-table {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow-x: auto;
     margin-bottom: 30px;
 }
@@ -216,19 +230,13 @@ include __DIR__ . '/../layout.php';
 }
 .data-table th, .data-table td {
     padding: 12px 15px;
-    border-bottom: 1px solid #ecf0f1;
     white-space: nowrap;
     text-align: left;
 }
 .data-table th {
-    background: #34495e;
-    color: #fff;
     position: sticky;
     top: 0;
     z-index: 2;
-}
-.data-table tr:hover {
-    background: #f8f9fa;
 }
 @media (max-width: 1100px) {
     .data-table table {

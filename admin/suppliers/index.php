@@ -27,6 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($_GET['delete'])) {
+    if (!isAdmin()) {
+        setFlashMessage('error', 'Bạn không có quyền xóa nhà cung cấp');
+        redirect('index.php');
+    }
     $supplierModel->deleteSupplier($_GET['delete']);
     setFlashMessage('success', 'Xóa nhà cung cấp thành công');
     redirect('index.php');
@@ -73,7 +77,9 @@ include __DIR__ . '/../layout.php';
                 <div class="d-flex gap-10">
                     <button id="bulkActivateBtn" class="btn btn-success">Kích hoạt</button>
                     <button id="bulkDeactivateBtn" class="btn btn-warning">Ngừng hoạt động</button>
+                    <?php if (isAdmin()): ?>
                     <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
+                    <?php endif; ?>
                     <button id="exportSuppliersBtn" class="btn btn-info">Xuất CSV</button>
                 </div>
             </div>
@@ -105,8 +111,11 @@ include __DIR__ . '/../layout.php';
                                 <td><?php echo htmlspecialchars($sup['address']); ?></td>
                                 <td><?php echo $sup['status'] ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-secondary">Ngừng hoạt động</span>'; ?></td>
                                 <td>
-                                    <a href="?edit=<?php echo $sup['id']; ?>" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
-                                    <a href="?delete=<?php echo $sup['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa nhà cung cấp?')"><i class="fas fa-trash"></i></a>
+                                    <a href="detail.php?id=<?php echo $sup['id']; ?>" class="btn btn-sm btn-info" title="Chi tiết"><i class="fas fa-eye"></i></a>
+                                    <a href="?edit=<?php echo $sup['id']; ?>" class="btn btn-sm btn-primary" title="Sửa"><i class="fas fa-edit"></i></a>
+                                    <?php if (isAdmin()): ?>
+                                    <a href="?delete=<?php echo $sup['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa nhà cung cấp?')" title="Xóa"><i class="fas fa-trash"></i></a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -128,7 +137,7 @@ include __DIR__ . '/../layout.php';
                     <?php endif; ?>
                 </div>
 
-                <div style="background: #fff; padding: 30px; border-radius: 10px; height: fit-content;">
+                <div style="background: var(--admin-card); padding: 30px; border-radius: 10px; height: fit-content;">
                     <h3><?php echo $editSupplier ? 'Sửa nhà cung cấp' : 'Thêm nhà cung cấp'; ?></h3>
                     <form method="POST">
                         <?php if ($editSupplier): ?>
@@ -188,10 +197,21 @@ include __DIR__ . '/../layout.php';
                 if (data.success) window.location.reload(); else alert(data.message || 'Lỗi');
             }).catch(()=> alert('Lỗi mạng'));
         }
-        document.getElementById('bulkActivateBtn')?.addEventListener('click', () => doBulkAction('bulk_activate'));
-        document.getElementById('bulkDeactivateBtn')?.addEventListener('click', () => doBulkAction('bulk_deactivate'));
-        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => doBulkAction('bulk_delete'));
-        document.getElementById('exportSuppliersBtn')?.addEventListener('click', function(){
+        var bulkActivateBtn = document.getElementById('bulkActivateBtn');
+        if (bulkActivateBtn) {
+            bulkActivateBtn.addEventListener('click', function(){ doBulkAction('bulk_activate'); });
+        }
+        var bulkDeactivateBtn = document.getElementById('bulkDeactivateBtn');
+        if (bulkDeactivateBtn) {
+            bulkDeactivateBtn.addEventListener('click', function(){ doBulkAction('bulk_deactivate'); });
+        }
+        var bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', function(){ doBulkAction('bulk_delete'); });
+        }
+        var exportSuppliersBtn = document.getElementById('exportSuppliersBtn');
+        if (exportSuppliersBtn) {
+            exportSuppliersBtn.addEventListener('click', function(){
             const rows = Array.from(document.querySelectorAll('.data-table tbody tr'));
             let csv = 'ID,Name,Email,Phone,Address,Status\n';
             rows.forEach(r=>{
@@ -212,7 +232,8 @@ include __DIR__ . '/../layout.php';
             document.body.appendChild(link);
             link.click();
             link.remove();
-        });
+            });
+        }
     });
     </script>
 </body>

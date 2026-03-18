@@ -17,6 +17,11 @@ if (!$input || !isset($input['action'])) {
 
 $action = $input['action'];
 if ($action === 'bulk_delete') {
+    // Chỉ admin mới được xóa
+    if (!isAdmin()) {
+        echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xóa danh mục']);
+        exit;
+    }
     $ids = $input['ids'] ?? [];
     if (!is_array($ids) || empty($ids)) {
         echo json_encode(['success' => false, 'message' => 'Không có danh mục để xóa']);

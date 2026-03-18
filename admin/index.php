@@ -31,215 +31,71 @@ $recentOrders = $orderModel->getAllOrders(null, 10);
 $topProducts = $orderModel->getTopSellingProducts(5);
 
 $pageTitle = 'Dashboard - Admin';
+$activeMenu = 'dashboard';
+include __DIR__ . '/layout.php';
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .admin-layout {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            min-height: 100vh;
-        }
-        .admin-sidebar {
-            background: #2c3e50;
-            color: #fff;
-            padding: 20px 0;
-        }
-        .admin-sidebar h2 {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
-        }
-        .admin-menu {
-            list-style: none;
-        }
-        .admin-menu li a {
-            display: block;
-            padding: 12px 20px;
-            color: #ecf0f1;
-            transition: all 0.3s;
-        }
-        .admin-menu li a:hover,
-        .admin-menu li a.active {
-            background: #34495e;
-            border-left: 3px solid var(--primary-color);
-        }
-        .admin-content {
-            padding: 30px;
-            background: #ecf0f1;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-        }
-        .stat-card .icon {
-            font-size: 48px;
-            opacity: 0.1;
-            position: absolute;
-            right: -10px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        .stat-card.blue {
-            border-left: 4px solid #3498db;
-        }
-        .stat-card.blue .icon { color: #3498db; }
-        .stat-card.green {
-            border-left: 4px solid #2ecc71;
-        }
-        .stat-card.green .icon { color: #2ecc71; }
-        .stat-card.orange {
-            border-left: 4px solid #f39c12;
-        }
-        .stat-card.orange .icon { color: #f39c12; }
-        .stat-card.red {
-            border-left: 4px solid #e74c3c;
-        }
-        .stat-card.red .icon { color: #e74c3c; }
-        .stat-card.purple {
-            border-left: 4px solid #9b59b6;
-        }
-        .stat-card.purple .icon { color: #9b59b6; }
-        .chart-container {
-            background: #fff;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        .data-table {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .data-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th {
-            background: #34495e;
-            color: #fff;
-            padding: 15px;
-            text-align: left;
-        }
-        .data-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #ecf0f1;
-        }
-        .data-table tr:hover {
-            background: #f8f9fa;
-        }
-    </style>
-</head>
-<body>
-    <div class="admin-layout">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <h2><i class="fas fa-cog"></i> Admin Panel</h2>
-            
-            <ul class="admin-menu">
-                <li><a href="index.php" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="products/index.php"><i class="fas fa-box"></i> Sản phẩm</a></li>
-                <li><a href="categories/index.php"><i class="fas fa-list"></i> Danh mục</a></li>
-                <li><a href="orders/index.php"><i class="fas fa-shopping-cart"></i> Đơn hàng</a></li>
-                <li><a href="user/customers.php"><i class="fas fa-users"></i> Khách hàng</a></li>
-                <li><a href="user/staff.php"><i class="fas fa-user-tie"></i> Nhân viên</a></li>
-                <li><a href="coupons/index.php"><i class="fas fa-tags"></i> Mã giảm giá</a></li>
-                <li><a href="news/index.php"><i class="fas fa-newspaper"></i> Tin tức</a></li>
-                <li><a href="banners/index.php"><i class="fas fa-image"></i> Banner</a></li>
-                <li><a href="contacts/index.php"><i class="fas fa-envelope"></i> Liên hệ</a></li>
-                <li><a href="statistics/index.php"><i class="fas fa-chart-bar"></i> Thống kê</a></li>
-                <li><hr style="border-color: rgba(255,255,255,0.1);"></li>
-                <li><a href="../index.php"><i class="fas fa-home"></i> Về trang chủ</a></li>
-                <li><a href="../customer/logout.php"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
-            </ul>
-        </aside>
-        
-        <!-- Main Content -->
-        <main class="admin-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div class="page-header">
                 <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                <div class="stat-card blue">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                <div class="stat-card" style="border-left: 4px solid var(--admin-primary);">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Tổng doanh thu</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 10px; color: var(--admin-text-light); margin-bottom: 4px;">Tổng doanh thu</div>
+                        <div style="font-size: 17px; font-weight: 600; color: var(--admin-text);">
                             <?php echo formatCurrency($totalRevenue); ?>
                         </div>
                     </div>
-                    <i class="fas fa-dollar-sign icon"></i>
+                    <i class="fas fa-dollar-sign" style="font-size: 30px; opacity: 0.15; color: var(--admin-primary); position: absolute; right: 8px; top: 50%; transform: translateY(-50%);"></i>
                 </div>
                 
-                <div class="stat-card green">
+                <div class="stat-card" style="border-left: 4px solid var(--admin-success);">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Tổng đơn hàng</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 10px; color: var(--admin-text-light); margin-bottom: 4px;">Tổng đơn hàng</div>
+                        <div style="font-size: 17px; font-weight: 600; color: var(--admin-text);">
                             <?php echo $totalOrders; ?>
                         </div>
                     </div>
-                    <i class="fas fa-shopping-cart icon"></i>
+                    <i class="fas fa-shopping-cart" style="font-size: 30px; opacity: 0.15; color: var(--admin-success); position: absolute; right: 8px; top: 50%; transform: translateY(-50%);"></i>
                 </div>
                 
-                <div class="stat-card orange">
+                <div class="stat-card" style="border-left: 4px solid var(--admin-warning);">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Tổng sản phẩm</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 10px; color: var(--admin-text-light); margin-bottom: 4px;">Tổng sản phẩm</div>
+                        <div style="font-size: 17px; font-weight: 600; color: var(--admin-text);">
                             <?php echo $totalProducts; ?>
                         </div>
                     </div>
-                    <i class="fas fa-box icon"></i>
+                    <i class="fas fa-box" style="font-size: 30px; opacity: 0.15; color: var(--admin-warning); position: absolute; right: 8px; top: 50%; transform: translateY(-50%);"></i>
                 </div>
                 
-                <div class="stat-card red">
+                <div class="stat-card" style="border-left: 4px solid var(--admin-info);">
                     <div>
-                        <div style="font-size: 14px; color: #7f8c8d;">Khách hàng</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-top: 5px;">
+                        <div style="font-size: 10px; color: var(--admin-text-light); margin-bottom: 4px;">Khách hàng</div>
+                        <div style="font-size: 17px; font-weight: 600; color: var(--admin-text);">
                             <?php echo $totalCustomers; ?>
                         </div>
                     </div>
-                    <i class="fas fa-users icon"></i>
+                    <i class="fas fa-users" style="font-size: 30px; opacity: 0.15; color: var(--admin-info); position: absolute; right: 8px; top: 50%; transform: translateY(-50%);"></i>
                 </div>
             </div>
             
             <!-- Biểu đồ doanh thu -->
             <div class="chart-container">
-                <h3 style="margin-bottom: 20px;"><i class="fas fa-chart-line"></i> Doanh thu theo tháng (<?php echo date('Y'); ?>)</h3>
+                <h3 style="margin-bottom: 10px; font-size: 14px; font-weight: 600; color: var(--admin-text);">
+                    <i class="fas fa-chart-line" style="color: var(--admin-primary);"></i> Doanh thu theo tháng (<?php echo date('Y'); ?>)
+                </h3>
                 <canvas id="revenueChart" width="400" height="100"></canvas>
             </div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
                 <!-- Đơn hàng mới nhất -->
                 <div class="data-table">
-                    <h3 style="padding: 20px; background: #34495e; color: #fff; margin: 0;">
-                        <i class="fas fa-shopping-bag"></i> Đơn hàng mới nhất
-                    </h3>
+                    <div style="padding: 12px; background: linear-gradient(135deg, var(--admin-primary-very-pale) 0%, var(--admin-primary-pale) 100%); border-bottom: 2px solid var(--admin-border);">
+                        <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--admin-text);">
+                            <i class="fas fa-shopping-bag" style="color: var(--admin-primary);"></i> Đơn hàng mới nhất
+                        </h3>
+                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -270,9 +126,11 @@ $pageTitle = 'Dashboard - Admin';
                 
                 <!-- Sản phẩm bán chạy -->
                 <div class="data-table">
-                    <h3 style="padding: 20px; background: #34495e; color: #fff; margin: 0;">
-                        <i class="fas fa-fire"></i> Top sản phẩm
-                    </h3>
+                    <div style="padding: 12px; background: linear-gradient(135deg, var(--admin-primary-very-pale) 0%, var(--admin-primary-pale) 100%); border-bottom: 2px solid var(--admin-border);">
+                        <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--admin-text);">
+                            <i class="fas fa-fire" style="color: var(--admin-primary);"></i> Top sản phẩm
+                        </h3>
+                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -299,9 +157,6 @@ $pageTitle = 'Dashboard - Admin';
                     </table>
                 </div>
             </div>
-        </main>
-    </div>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Dữ liệu doanh thu theo tháng
@@ -323,8 +178,9 @@ $pageTitle = 'Dashboard - Admin';
                 datasets: [{
                     label: 'Doanh thu (VNĐ)',
                     data: revenues,
-                    backgroundColor: 'rgba(52, 152, 219, 0.8)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
+                    backgroundColor: 'rgba(50, 133, 166, 0.8)',
+                    borderColor: 'rgba(50, 133, 166, 1)',
+                    borderRadius: 8,
                     borderWidth: 1
                 }]
             },
@@ -356,5 +212,3 @@ $pageTitle = 'Dashboard - Admin';
             }
         });
     </script>
-</body>
-</html>

@@ -10,30 +10,34 @@ requireStaff();
 
 $orderModel = new Order();
 
-// Xử lý cập nhật trạng thái
-if (isset($_POST['update_status'])) {
-    $orderId = (int)$_POST['order_id'];
-    $status = $_POST['status'];
-    $result = $orderModel->updateOrderStatus($orderId, $status);
-    setFlashMessage($result['success'] ? 'success' : 'error', $result['message']);
-    redirect('index.php');
-}
-
-// Xử lý cập nhật trạng thái
-if (isset($_POST['update_status'])) {
-    $orderId = (int)$_POST['order_id'];
-    $status = $_POST['status'];
-    $result = $orderModel->updateOrderStatus($orderId, $status);
-    setFlashMessage($result['success'] ? 'success' : 'error', $result['message']);
-    redirect('index.php');
-}
-
 // Search and filter
 $filterStatus = $_GET['status'] ?? null;
 $keyword = $_GET['q'] ?? '';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 20;
 $offset = ($page - 1) * $perPage;
+
+// Xử lý cập nhật trạng thái
+if (isset($_POST['update_status']) && isset($_POST['order_id']) && isset($_POST['status'])) {
+    $orderId = (int)$_POST['order_id'];
+    $status = $_POST['status'];
+    $result = $orderModel->updateOrderStatus($orderId, $status);
+    setFlashMessage($result['success'] ? 'success' : 'error', $result['message']);
+    
+    // Giữ nguyên các tham số filter và search khi redirect
+    $redirectUrl = 'index.php';
+    $queryParams = [];
+    if ($filterStatus) {
+        $queryParams['status'] = $filterStatus;
+    }
+    if ($keyword) {
+        $queryParams['q'] = $keyword;
+    }
+    if (!empty($queryParams)) {
+        $redirectUrl .= '?' . http_build_query($queryParams);
+    }
+    redirect($redirectUrl);
+}
 
 // Get all orders and apply filters
 $allOrders = $orderModel->getAllOrders($filterStatus);
@@ -101,12 +105,13 @@ include __DIR__ . '/../layout.php';
                             <td><strong><?php echo $order['order_code']; ?></strong></td>
                             <td><?php echo htmlspecialchars($order['customer_name']); ?></td>
                             <td><?php echo htmlspecialchars($order['customer_phone']); ?></td>
-                            <td><strong style="color: #e74c3c;"><?php echo formatCurrency($order['total']); ?></strong></td>
+                            <td><strong style="color: var(--admin-primary);"><?php echo formatCurrency($order['total']); ?></strong></td>
                             <td><?php echo getPaymentMethodText($order['payment_method']); ?></td>
                             <td>
-                                <form method="POST" style="display: inline;">
+                                <form method="POST" style="display: inline-flex; gap: 5px; align-items: center;" class="status-update-form">
                                     <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                                    <select name="status" class="form-control" onchange="if(confirm('Cập nhật trạng thái?')) this.form.submit()">
+                                    <input type="hidden" name="update_status" value="1">
+                                    <select name="status" class="form-control status-select" data-original-value="<?php echo htmlspecialchars($order['order_status']); ?>" style="min-width: 150px;">
                                         <option value="pending" <?php echo $order['order_status'] === 'pending' ? 'selected' : ''; ?>>Chờ xác nhận</option>
                                         <option value="confirmed" <?php echo $order['order_status'] === 'confirmed' ? 'selected' : ''; ?>>Đã xác nhận</option>
                                         <option value="processing" <?php echo $order['order_status'] === 'processing' ? 'selected' : ''; ?>>Đang xử lý</option>
@@ -114,7 +119,9 @@ include __DIR__ . '/../layout.php';
                                         <option value="delivered" <?php echo $order['order_status'] === 'delivered' ? 'selected' : ''; ?>>Đã giao hàng</option>
                                         <option value="cancelled" <?php echo $order['order_status'] === 'cancelled' ? 'selected' : ''; ?>>Đã hủy</option>
                                     </select>
-                                    <button type="submit" name="update_status" style="display: none;"></button>
+                                    <button type="submit" class="btn btn-sm btn-primary update-status-btn" title="Cập nhật trạng thái" style="white-space: nowrap; padding: 6px 12px; margin-left: 5px;">
+                                        <i class="fas fa-save"></i> Cập nhật
+                                    </button>
                                 </form>
                             </td>
                             <td><?php echo formatDate($order['created_at'], 'd/m/Y H:i'); ?></td>
@@ -141,21 +148,65 @@ include __DIR__ . '/../layout.php';
             <?php endif; ?>
         </main>
     </div>
-</body>
-</html>
     <script>
-        // Xác nhận trước khi thay đổi trạng thái
-        document.querySelectorAll('select[name="status"]').forEach(function(select) {
+        // Đợi DOM load xong
+        document.addEventListener('DOMContentLoaded', function() {
+            // Xử lý hiển thị nút cập nhật khi thay đổi trạng thái
+            document.querySelectorAll('select.status-select').forEach(function(select) {
+                const form = select.closest('form');
+                const updateBtn = form.querySelector('.update-status-btn');
+                const originalValue = select.getAttribute('data-original-value');
+                
+                // Xử lý khi thay đổi giá trị - có thể thêm highlight nếu cần
             select.addEventListener('change', function() {
-                if (!confirm('Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng?')) {
-                    // Nếu không đồng ý, quay lại trạng thái ban đầu
-                    this.value = this.getAttribute('data-original-value');
+                    // Có thể thêm visual feedback nếu cần
+                    if (this.value !== originalValue) {
+                        this.style.borderColor = 'var(--admin-primary)';
+                    } else {
+                        this.style.borderColor = '';
+                    }
+                });
+                
+                // Xác nhận trước khi submit form
+                form.addEventListener('submit', function(e) {
+                    const currentValue = select.value;
+                    
+                    // Nếu giá trị không thay đổi, không submit
+                    if (currentValue === originalValue) {
+                        e.preventDefault();
+                        alert('Vui lòng chọn trạng thái khác để cập nhật!');
+                        return false;
+                    }
+                    
+                    // Xác nhận trước khi submit
+                    if (!confirm('Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng từ "' + 
+                        getStatusText(originalValue) + '" sang "' + getStatusText(currentValue) + '"?')) {
+                        e.preventDefault();
+                        // Quay lại trạng thái ban đầu
+                        select.value = originalValue;
+                        select.style.borderColor = '';
+                        return false;
                 }
             });
         });
         
-        
-        document.getElementById('exportOrdersBtn').addEventListener('click', function() {
+            // Hàm lấy text của trạng thái
+            function getStatusText(status) {
+                const statuses = {
+                    'pending': 'Chờ xác nhận',
+                    'confirmed': 'Đã xác nhận',
+                    'processing': 'Đang xử lý',
+                    'shipping': 'Đang giao hàng',
+                    'delivered': 'Đã giao hàng',
+                    'cancelled': 'Đã hủy'
+                };
+                return statuses[status] || status;
+            }
+            
+            // Export CSV
+            const exportBtn = document.getElementById('exportOrdersBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
             const rows = document.querySelectorAll('table tbody tr');
             let csv = '"Mã đơn","Khách hàng","SĐT","Tổng tiền","Thanh toán","Trạng thái","Ngày đặt"\n';
             rows.forEach(row => {
@@ -169,3 +220,8 @@ include __DIR__ . '/../layout.php';
             link.download = 'orders-' + new Date().toISOString().split('T')[0] + '.csv';
             link.click();
         });
+            }
+        });
+    </script>
+</body>
+</html>

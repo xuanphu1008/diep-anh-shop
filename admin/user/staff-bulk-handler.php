@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../includes/Database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../models/User.php';
 
-requireStaff();
+requireAdmin(); // Chỉ admin mới được quản lý nhân viên
 
 header('Content-Type: application/json');
 

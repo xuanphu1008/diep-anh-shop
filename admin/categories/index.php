@@ -39,8 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     redirect('index.php');
 }
 
-// Xử lý xóa
+// Xử lý xóa - Chỉ admin
 if (isset($_GET['delete'])) {
+    if (!isAdmin()) {
+        setFlashMessage('error', 'Bạn không có quyền xóa danh mục');
+        redirect('index.php');
+    }
     $categoryModel->deleteCategory($_GET['delete']);
     setFlashMessage('success', 'Xóa danh mục thành công');
     redirect('index.php');
@@ -84,7 +88,9 @@ include __DIR__ . '/../layout.php';
                         </div>
                         <div class="d-flex gap-10">
                             <button id="exportBtn" class="btn btn-success"><i class="fas fa-download"></i> Xuất CSV</button>
+                            <?php if (isAdmin()): ?>
                             <button id="bulkDeleteBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Xóa đã chọn</button>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -121,11 +127,13 @@ include __DIR__ . '/../layout.php';
                                     <a href="?edit=<?php echo $cat['id']; ?>" class="btn btn-sm btn-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    <?php if (isAdmin()): ?>
                                     <a href="?delete=<?php echo $cat['id']; ?>" 
                                        class="btn btn-sm btn-danger"
                                        onclick="return confirm('Bạn có chắc muốn xóa?')">
                                         <i class="fas fa-trash"></i>
                                     </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

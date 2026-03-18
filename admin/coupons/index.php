@@ -32,6 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($_GET['delete'])) {
+    if (!isAdmin()) {
+        setFlashMessage('error', 'Bạn không có quyền xóa mã giảm giá');
+        redirect('index.php');
+    }
     $couponModel->deleteCoupon($_GET['delete']);
     setFlashMessage('success', 'Xóa mã giảm giá thành công');
     redirect('index.php');
@@ -88,7 +92,9 @@ include __DIR__ . '/../layout.php';
                 <div class="d-flex gap-10">
                     <button id="bulkActivateBtn" class="btn btn-success">Kích hoạt</button>
                     <button id="bulkDeactivateBtn" class="btn btn-warning">Tắt</button>
+                    <?php if (isAdmin()): ?>
                     <button id="bulkDeleteBtn" class="btn btn-danger">Xóa</button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -141,8 +147,11 @@ include __DIR__ . '/../layout.php';
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="?edit=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
-                                    <a href="?delete=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa mã?')"><i class="fas fa-trash"></i></a>
+                                    <a href="detail.php?id=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-info" title="Chi tiết"><i class="fas fa-eye"></i></a>
+                                    <a href="?edit=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-primary" title="Sửa"><i class="fas fa-edit"></i></a>
+                                    <?php if (isAdmin()): ?>
+                                    <a href="?delete=<?php echo $coupon['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xóa mã?')" title="Xóa"><i class="fas fa-trash"></i></a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -164,7 +173,7 @@ include __DIR__ . '/../layout.php';
                     <?php endif; ?>
                 </div>
                 
-                <div style="background: #fff; padding: 30px; border-radius: 10px; height: fit-content;">
+                <div style="background: var(--admin-card); padding: 30px; border-radius: 10px; height: fit-content;">
                     <h3><?php echo $editCoupon ? 'Sửa mã giảm giá' : 'Tạo mã giảm giá'; ?></h3>
                     <form method="POST">
                         <?php if ($editCoupon): ?>
@@ -212,13 +221,13 @@ include __DIR__ . '/../layout.php';
                         <div class="form-group">
                             <label>Ngày bắt đầu</label>
                             <input type="datetime-local" name="start_date" class="form-control"
-                                   value="<?php echo $editCoupon['start_date'] ? date('Y-m-d\TH:i', strtotime($editCoupon['start_date'])) : ''; ?>">
+                                   value="<?php echo (isset($editCoupon['start_date']) && $editCoupon['start_date']) ? date('Y-m-d\TH:i', strtotime($editCoupon['start_date'])) : ''; ?>">
                         </div>
                         
                         <div class="form-group">
                             <label>Ngày kết thúc</label>
                             <input type="datetime-local" name="end_date" class="form-control"
-                                   value="<?php echo $editCoupon['end_date'] ? date('Y-m-d\TH:i', strtotime($editCoupon['end_date'])) : ''; ?>">
+                                   value="<?php echo (isset($editCoupon['end_date']) && $editCoupon['end_date']) ? date('Y-m-d\TH:i', strtotime($editCoupon['end_date'])) : ''; ?>">
                         </div>
                         
                         <div class="form-group">
@@ -262,10 +271,21 @@ include __DIR__ . '/../layout.php';
                 if (data.success) window.location.reload(); else alert(data.message || 'Lỗi');
             }).catch(()=> alert('Lỗi mạng'));
         }
-        document.getElementById('bulkActivateBtn')?.addEventListener('click', () => doBulkAction('bulk_activate'));
-        document.getElementById('bulkDeactivateBtn')?.addEventListener('click', () => doBulkAction('bulk_deactivate'));
-        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => doBulkAction('bulk_delete'));
-        document.getElementById('exportCouponsBtn')?.addEventListener('click', function(){
+        var bulkActivateBtn = document.getElementById('bulkActivateBtn');
+        if (bulkActivateBtn) {
+            bulkActivateBtn.addEventListener('click', function(){ doBulkAction('bulk_activate'); });
+        }
+        var bulkDeactivateBtn = document.getElementById('bulkDeactivateBtn');
+        if (bulkDeactivateBtn) {
+            bulkDeactivateBtn.addEventListener('click', function(){ doBulkAction('bulk_deactivate'); });
+        }
+        var bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.addEventListener('click', function(){ doBulkAction('bulk_delete'); });
+        }
+        var exportCouponsBtn = document.getElementById('exportCouponsBtn');
+        if (exportCouponsBtn) {
+            exportCouponsBtn.addEventListener('click', function(){
             const rows = Array.from(document.querySelectorAll('.data-table tbody tr'));
             let csv = 'ID,Code,Type,Value,Qty,Used,Status\n';
             rows.forEach(r=>{
@@ -287,7 +307,8 @@ include __DIR__ . '/../layout.php';
             document.body.appendChild(link);
             link.click();
             link.remove();
-        });
+            });
+        }
     });
     </script>
 
