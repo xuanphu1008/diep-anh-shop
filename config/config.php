@@ -11,7 +11,9 @@ define('DB_CHARSET', 'utf8mb4');
 // Cấu hình website
 define('SITE_NAME', 'Diệp Anh Computer');
 define('SITE_URL', 'http://localhost/diep-anh-shop');
+define('BASE_URL', 'http://localhost/diep-anh-shop');
 define('ADMIN_EMAIL', 'admin@diepanhshop.com');
+define('ENVIRONMENT', 'development'); // development hoặc production
 
 // Cấu hình phiên làm việc
 define('SESSION_TIMEOUT', 3600); // 1 giờ

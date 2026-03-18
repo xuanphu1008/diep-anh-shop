@@ -17,27 +17,44 @@ if ($userId) {
     $cartDetails = $cartModel->getCartDetails($userId);
 } else {
     // Giỏ hàng session cho khách chưa đăng nhập
-    $sessionCart = $cartModel->getSessionCart();
+    $sessionCart = $_SESSION['cart'] ?? [];
     $items = [];
     $subtotal = 0;
     
-    foreach ($sessionCart as $productId => $quantity) {
-        $product = $productModel->getProductById($productId);
-        if ($product && $product['is_active'] && $product['deleted_at'] === null) {
-            $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
-            $items[] = [
-                'product_id' => $product['id'],
-                'name' => $product['name'],
-                'slug' => $product['slug'],
-                'price' => $product['price'],
-                'discount_price' => $product['discount_price'],
-                'final_price' => $finalPrice,
-                'image' => $product['image'],
-                'quantity' => $quantity,
-                'stock_quantity' => $product['quantity'],
-                'total' => $finalPrice * $quantity
-            ];
-            $subtotal += $finalPrice * $quantity;
+    // Xử lý cả 2 format: array với key là productId hoặc array các object
+    foreach ($sessionCart as $key => $value) {
+        $productId = 0;
+        $quantity = 0;
+        
+        // Format mới: array các object với key 'id'
+        if (is_array($value) && isset($value['id'])) {
+            $productId = $value['id'];
+            $quantity = $value['quantity'] ?? 1;
+        } 
+        // Format cũ: key là productId, value là quantity
+        else if (is_numeric($key) && is_numeric($value)) {
+            $productId = (int)$key;
+            $quantity = (int)$value;
+        }
+        
+        if ($productId > 0 && $quantity > 0) {
+            $product = $productModel->getProductById($productId);
+            if ($product && $product['is_active'] && $product['deleted_at'] === null) {
+                $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
+                $items[] = [
+                    'product_id' => $product['id'],
+                    'name' => $product['name'],
+                    'slug' => $product['slug'],
+                    'price' => $product['price'],
+                    'discount_price' => $product['discount_price'],
+                    'final_price' => $finalPrice,
+                    'image' => $product['image'],
+                    'quantity' => $quantity,
+                    'stock_quantity' => $product['quantity'],
+                    'total' => $finalPrice * $quantity
+                ];
+                $subtotal += $finalPrice * $quantity;
+            }
         }
     }
     
@@ -110,15 +127,81 @@ $pageTitle = 'Giỏ hàng - ' . SITE_NAME;
         }
         .empty-cart {
             text-align: center;
-            padding: 50px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
+            padding: 80px 30px;
+            background: linear-gradient(135deg, var(--light-color) 0%, #ffffff 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(2, 40, 89, 0.08);
+            max-width: 600px;
+            margin: 40px auto;
         }
         .empty-cart i {
-            font-size: 80px;
-            color: #ccc;
-            margin-bottom: 20px;
+            font-size: 120px;
+            color: var(--border-color);
+            margin-bottom: 30px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .empty-cart h2 {
+            font-size: 28px;
+            color: var(--dark-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .empty-cart p {
+            font-size: 16px;
+            color: var(--primary-dark);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .empty-cart .btn-shopping {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px rgba(50, 133, 166, 0.4);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .empty-cart .btn-shopping:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(50, 133, 166, 0.5);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-darkest) 100%);
+        }
+        .empty-cart .btn-shopping:active {
+            transform: translateY(0);
+        }
+        .empty-cart .btn-shopping i {
+            font-size: 20px;
+            color: #fff;
+            margin: 0;
+            animation: none;
+        }
+        @media (max-width: 768px) {
+            .empty-cart {
+                padding: 60px 20px;
+                margin: 20px auto;
+            }
+            .empty-cart i {
+                font-size: 80px;
+            }
+            .empty-cart h2 {
+                font-size: 24px;
+            }
+            .empty-cart .btn-shopping {
+                padding: 16px 32px;
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -145,9 +228,10 @@ $pageTitle = 'Giỏ hàng - ' . SITE_NAME;
             <div class="empty-cart">
                 <i class="fas fa-shopping-cart"></i>
                 <h2>Giỏ hàng trống</h2>
-                <p>Bạn chưa có sản phẩm nào trong giỏ hàng</p>
-                <a href="../products.php" class="btn btn-primary btn-lg">
-                    <i class="fas fa-shopping-bag"></i> Tiếp tục mua sắm
+                <p>Bạn chưa có sản phẩm nào trong giỏ hàng.<br>Hãy khám phá và mua sắm ngay!</p>
+                <a href="../products.php" class="btn-shopping">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Mua sắm ngay</span>
                 </a>
             </div>
         <?php else: ?>

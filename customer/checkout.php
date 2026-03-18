@@ -44,7 +44,7 @@ if (isset($_SESSION['applied_coupon'])) {
 }
 
 $subtotal = $cartDetails['subtotal'];
-$total = $subtotal - $couponDiscount;
+$total = max(0, $subtotal - $couponDiscount); // Đảm bảo total không bị âm
 
 // Xử lý đặt hàng
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

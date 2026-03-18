@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/Database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Rating.php';
 
 requireLogin();
 
@@ -156,13 +157,18 @@ $pageTitle = 'Thông tin cá nhân - ' . SITE_NAME;
                 
                 <ul class="profile-menu">
                     <li>
-                        <a href="#info" class="tab-link active" onclick="showTab('info')">
+                        <a href="#info" class="tab-link active" onclick="showTab(event,'info')">
                             <i class="fas fa-user"></i> Thông tin cá nhân
                         </a>
                     </li>
                     <li>
-                        <a href="#password" class="tab-link" onclick="showTab('password')">
+                        <a href="#password" class="tab-link" onclick="showTab(event,'password')">
                             <i class="fas fa-lock"></i> Đổi mật khẩu
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#ratings" class="tab-link" onclick="showTab(event,'ratings')">
+                            <i class="fas fa-star"></i> Đánh giá của tôi
                         </a>
                     </li>
                     <li>
@@ -241,6 +247,80 @@ $pageTitle = 'Thông tin cá nhân - ' . SITE_NAME;
                         </button>
                     </form>
                 </div>
+                
+                <!-- Tab đánh giá của tôi -->
+                <div id="ratings" class="tab-content">
+                    <h2>Đánh giá của tôi</h2>
+                    <?php
+                    $ratingModel = new Rating();
+                    $db = new Database();
+                    
+                    // Lấy danh sách đánh giá của user
+                    $sql = "SELECT r.id, r.rating, r.content, r.status, r.created_at,
+                                   p.id as product_id, p.name as product_name, p.slug, p.image,
+                                   p.price, p.discount_price
+                            FROM comments r
+                            INNER JOIN products p ON r.product_id = p.id
+                            WHERE r.user_id = ?
+                            ORDER BY r.created_at DESC";
+                    
+                    $userRatings = $db->query($sql, [$userId])->fetchAll();
+                    ?>
+                    
+                    <?php if (empty($userRatings)): ?>
+                        <div style="text-align: center; padding: 40px; background: var(--light-color); border-radius: 8px;">
+                            <i class="fas fa-star" style="font-size: 48px; opacity: 0.2; display: block; margin-bottom: 15px;"></i>
+                            <p style="color: #999; margin: 0;">Bạn chưa có đánh giá nào</p>
+                        </div>
+                    <?php else: ?>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                            <thead>
+                                <tr style="background: var(--light-color); border-bottom: 2px solid var(--border-color);">
+                                    <th style="padding: 12px; text-align: left;">Sản phẩm</th>
+                                    <th style="padding: 12px; text-align: center; width: 100px;">Đánh giá</th>
+                                    <th style="padding: 12px; text-align: center; width: 120px;">Trạng thái</th>
+                                    <th style="padding: 12px; text-align: left;">Nhận xét</th>
+                                    <th style="padding: 12px; text-align: left; width: 150px;">Ngày đánh giá</th>
+                                    <th style="padding: 12px; text-align: center; width: 80px;">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($userRatings as $rating): ?>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 12px;">
+                                        <a href="../product-detail.php?slug=<?php echo $rating['slug']; ?>" style="color: var(--primary-color); text-decoration: none;">
+                                            <?php echo htmlspecialchars(substr($rating['product_name'], 0, 40)); ?>
+                                        </a>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center; color: var(--warning-color);">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <i class="fas fa-star" style="opacity: <?php echo $i <= $rating['rating'] ? '1' : '0.3'; ?>"></i>
+                                        <?php endfor; ?>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px;
+                                                     background: <?php echo $rating['status'] == 1 ? 'rgba(74, 155, 107, 0.12)' : 'rgba(212, 165, 116, 0.12)'; ?>;
+                                                     color: <?php echo $rating['status'] == 1 ? '#2d6b4a' : '#a67a4f'; ?>;">
+                                            <?php echo $rating['status'] == 1 ? 'Đã duyệt' : 'Chờ duyệt'; ?>
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px;">
+                                        <small style="color: #555;"><?php echo htmlspecialchars(substr($rating['content'] ?? '', 0, 50)); ?><?php echo strlen($rating['content'] ?? '') > 50 ? '...' : ''; ?></small>
+                                    </td>
+                                    <td style="padding: 12px;">
+                                        <small style="color: #999;"><?php echo formatDate($rating['created_at'], 'd/m/Y'); ?></small>
+                                    </td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <a href="javascript:deleteRating(<?php echo $rating['id']; ?>)" style="color: var(--danger-color); text-decoration: none; font-size: 14px;">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
             </main>
         </div>
     </div>
@@ -248,22 +328,53 @@ $pageTitle = 'Thông tin cá nhân - ' . SITE_NAME;
     <?php include __DIR__ . '/../includes/footer.php'; ?>
     
     <script>
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active from all links
-            document.querySelectorAll('.tab-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active to clicked link
-            event.target.classList.add('active');
+        function showTab(evt, tabName) {
+            try {
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active from all links
+                document.querySelectorAll('.tab-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Show selected tab
+                document.getElementById(tabName).classList.add('active');
+                
+                // Add active to clicked link
+                if (evt && evt.currentTarget) {
+                    evt.currentTarget.classList.add('active');
+                } else if (evt && evt.target) {
+                    const link = evt.target.closest('.tab-link');
+                    if (link) link.classList.add('active');
+                }
+            } catch (e) {
+                console.error('showTab error', e);
+            }
+        }
+        
+        function deleteRating(id) {
+            if (confirm('Bạn chắc chắn muốn xóa đánh giá này?')) {
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('rating_id', id);
+                
+                fetch('../api/rating-handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.success) {
+                        alert('Đánh giá đã được xóa');
+                        location.reload();
+                    } else {
+                        alert(d.message);
+                    }
+                });
+            }
         }
     </script>
 </body>

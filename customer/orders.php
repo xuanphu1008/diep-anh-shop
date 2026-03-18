@@ -77,15 +77,81 @@ $pageTitle = 'Đơn hàng của tôi - ' . SITE_NAME;
         }
         .empty-orders {
             text-align: center;
-            padding: 80px 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
+            padding: 80px 30px;
+            background: linear-gradient(135deg, var(--light-color) 0%, #ffffff 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(2, 40, 89, 0.08);
+            max-width: 600px;
+            margin: 40px auto;
         }
         .empty-orders i {
-            font-size: 80px;
-            color: #ccc;
-            margin-bottom: 20px;
+            font-size: 120px;
+            color: var(--border-color);
+            margin-bottom: 30px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .empty-orders h2 {
+            font-size: 28px;
+            color: var(--dark-color);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .empty-orders p {
+            font-size: 16px;
+            color: var(--primary-dark);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .empty-orders .btn-shopping {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px rgba(50, 133, 166, 0.4);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .empty-orders .btn-shopping:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(50, 133, 166, 0.5);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-darkest) 100%);
+        }
+        .empty-orders .btn-shopping:active {
+            transform: translateY(0);
+        }
+        .empty-orders .btn-shopping i {
+            font-size: 20px;
+            color: #fff;
+            margin: 0;
+            animation: none;
+        }
+        @media (max-width: 768px) {
+            .empty-orders {
+                padding: 60px 20px;
+                margin: 20px auto;
+            }
+            .empty-orders i {
+                font-size: 80px;
+            }
+            .empty-orders h2 {
+                font-size: 24px;
+            }
+            .empty-orders .btn-shopping {
+                padding: 16px 32px;
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -105,9 +171,10 @@ $pageTitle = 'Đơn hàng của tôi - ' . SITE_NAME;
             <div class="empty-orders">
                 <i class="fas fa-shopping-bag"></i>
                 <h2>Bạn chưa có đơn hàng nào</h2>
-                <p>Hãy khám phá và mua sắm ngay!</p>
-                <a href="../products.php" class="btn btn-primary btn-lg">
-                    <i class="fas fa-shopping-cart"></i> Mua sắm ngay
+                <p>Hãy khám phá và mua sắm ngay!<br>Chúng tôi có nhiều sản phẩm hấp dẫn đang chờ bạn.</p>
+                <a href="../products.php" class="btn-shopping">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Mua sắm ngay</span>
                 </a>
             </div>
         <?php else: ?>

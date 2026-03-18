@@ -52,6 +52,7 @@ function createChatbotWindow() {
     // Focus vào input
     setTimeout(() => {
         document.getElementById('chatbot-input').focus();
+        addQuickReplies();
     }, 100);
 }
 
@@ -267,6 +268,11 @@ function scrollChatToBottom() {
 
 // Gợi ý câu hỏi nhanh
 function addQuickReplies() {
+    const messagesContainer = document.getElementById('chatbot-messages');
+    if (!messagesContainer || messagesContainer.querySelector('.quick-replies')) {
+        return;
+    }
+    
     const quickReplies = [
         'Laptop gaming giá rẻ',
         'Laptop văn phòng',
@@ -274,8 +280,6 @@ function addQuickReplies() {
         'Khuyến mãi',
         'Chính sách bảo hành'
     ];
-    
-    const messagesContainer = document.getElementById('chatbot-messages');
     
     let repliesHTML = '<div class="quick-replies">';
     quickReplies.forEach(reply => {
