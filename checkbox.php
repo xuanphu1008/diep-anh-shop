@@ -1,19 +1,18 @@
 <?php
-// checkout.php - Trang thanh toán
+// checkout.php - Trang thanh tóan
 
-require_once 'config/config.php';
-require_once 'models/Cart.php';
-require_once 'models/User.php';
-require_once 'models/Coupon.php';
-require_once 'models/Order.php';
-require_once 'includes/VNPay.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/models/Cart.php';
+require_once __DIR__ . '/models/User.php';
+require_once __DIR__ . '/models/Coupon.php';
+require_once __DIR__ . '/models/Order.php';
+require_once __DIR__ . '/includes/VNPay.php';
 
 $cartModel = new Cart();
 $userModel = new User();
 $couponModel = new Coupon();
 $orderModel = new Order();
 
-// Kiểm tra giỏ hàng
 $userId = $userModel->isLoggedIn() ? $_SESSION['user_id'] : null;
 $cartDetails = $userId ? $cartModel->getCartDetails($userId) : null;
 
@@ -22,7 +21,6 @@ if (!$cartDetails || empty($cartDetails['items'])) {
     exit;
 }
 
-// Xử lý đặt hàng
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customerName = $_POST['customer_name'] ?? '';
     $customerEmail = $_POST['customer_email'] ?? '';
@@ -34,15 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Validate
     $errors = [];
-    if (empty($customerName)) $errors[] = 'Vui lòng nhập họ tên';
-    if (empty($customerPhone)) $errors[] = 'Vui lòng nhập số điện thoại';
-    if (empty($customerAddress)) $errors[] = 'Vui lòng nhập địa chỉ';
+    if (empty($customerName)) $errors[] = 'Vui lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â²ng nhÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â­p hÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»Ãƒâ€šÃ‚Â tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªn';
+    if (empty($customerPhone)) $errors[] = 'Vui lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â²ng nhÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â­p sÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ ÃƒÆ’Ã¢â‚¬Å¾ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“iÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡n thoÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â¡i';
+    if (empty($customerAddress)) $errors[] = 'Vui lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â²ng nhÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â­p ÃƒÆ’Ã¢â‚¬Å¾ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹a chÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°';
     
-    // Kiểm tra tồn kho
     $stockValidation = $cartModel->validateCartStock($userId);
     if (!$stockValidation['valid']) {
         foreach ($stockValidation['errors'] as $error) {
-            $errors[] = "Sản phẩm {$error['product_name']} chỉ còn {$error['available']} sản phẩm";
+            $errors[] = "SÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â£n phÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â©m {$error['product_name']} chÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â° cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â²n {$error['available']} sÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â£n phÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â©m";
         }
     }
     
@@ -51,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $couponDiscount = 0;
         $couponId = null;
         
-        // Áp dụng mã giảm giá
         if (!empty($couponCode)) {
             $couponResult = $couponModel->applyCoupon($couponCode, $subtotal);
             if ($couponResult['success']) {
@@ -60,9 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        $total = $subtotal - $couponDiscount;
+        $total = max(0, $subtotal - $couponDiscount); // Đảm bảo total không bị âm
         
-        // Tạo đơn hàng
         $orderData = [
             'user_id' => $userId,
             'customer_name' => $customerName,
@@ -78,7 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'items' => []
         ];
         
-        // Chuẩn bị items
         foreach ($cartDetails['items'] as $item) {
             $orderData['items'][] = [
                 'product_id' => $item['product_id'],
@@ -92,11 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $orderModel->createOrder($orderData);
         
         if ($result['success']) {
-            // Xóa giỏ hàng
             $cartModel->clearCart($userId);
             
-            // Gửi email xác nhận
-            require_once 'includes/mailer.php';
+            require_once __DIR__ . '/includes/mailer.php';
             $mailer = new Mailer();
             $orderInfo = $orderModel->getFullOrderInfo($result['order_id']);
             $mailer->sendOrderConfirmation($orderInfo);
@@ -122,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Lấy thông tin user nếu đã đăng nhập
+// Lấy thông tin user nếu đăng nhập
 $user = null;
 if ($userId) {
     $user = $userModel->getUserById($userId);
@@ -133,14 +125,14 @@ if ($userId) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thanh toán - Diệp Anh Computer</title>
+    <title>Thanh toÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡n - DiÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡p Anh Computer</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="checkout-page">
         <div class="container">
-            <h1>Thanh toán đơn hàng</h1>
+            <h1>Thanh toÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡n ÃƒÆ’Ã¢â‚¬Å¾ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“ÃƒÆ’Ã¢â‚¬Â Ãƒâ€šÃ‚Â¡n hÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â ng</h1>
             
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
@@ -154,10 +146,10 @@ if ($userId) {
                 <div class="checkout-form">
                     <form method="POST" action="">
                         <div class="form-section">
-                            <h2>Thông tin người nhận</h2>
+                            <h2>ThÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ng tin ngÃƒÆ’Ã¢â‚¬Â Ãƒâ€šÃ‚Â°ÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»Ãƒâ€šÃ‚Âi nhÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚ÂºÃƒâ€šÃ‚Â­n</h2>
                             
                             <div class="form-group">
-                                <label>Họ và tên <span class="required">*</span></label>
+                                <label>HÃƒÆ’Ã‚Â¡Ãƒâ€šÃ‚Â»Ãƒâ€šÃ‚Â vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªn <span class="required">*</span></label>
                                 <input type="text" name="customer_name" 
                                        value="<?php echo htmlspecialchars($user['full_name'] ?? ''); ?>" 
                                        required>

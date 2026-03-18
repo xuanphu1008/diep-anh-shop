@@ -1,10 +1,10 @@
 <?php
 // news.php - Trang tin tức
 
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/News.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/News.php';
 
 $newsModel = new News();
 $newsList = $newsModel->getAllNews();
@@ -21,7 +21,7 @@ $pageTitle = 'Tin tức - ' . SITE_NAME;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
     
     <div class="container" style="padding: 30px 0;">
         <h1 class="section-title"><i class="fas fa-newspaper"></i> Tin tức công nghệ</h1>
@@ -58,6 +58,7 @@ $pageTitle = 'Tin tức - ' . SITE_NAME;
         <?php endif; ?>
     </div>
     
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
+

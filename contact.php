@@ -1,8 +1,8 @@
 <?php
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/Contact.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/Contact.php';
 
 $contactModel = new Contact();
 $errors = [];
@@ -75,6 +75,15 @@ $pageTitle = 'Liên hệ - ' . SITE_NAME;
             border-radius: 10px;
             box-shadow: var(--shadow);
         }
+        .contact-info .social-links a {
+            color: var(--primary-color);
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .contact-info .social-links a:hover {
+            color: var(--secondary-color);
+            transform: translateY(-3px);
+        }
         @media (max-width: 768px) {
             .contact-container {
                 grid-template-columns: 1fr;
@@ -83,7 +92,7 @@ $pageTitle = 'Liên hệ - ' . SITE_NAME;
     </style>
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
     
     <div class="container contact-container">
         <!-- Thông tin liên hệ -->
@@ -93,7 +102,7 @@ $pageTitle = 'Liên hệ - ' . SITE_NAME;
             <div class="contact-info-item">
                 <i class="fas fa-map-marker-alt"></i>
                 <div>
-                    <h4>Địa chỉ</h4>
+                    <h4>Địa chỉ cửa hàng</h4>
                     <p>123 Đường ABC, Quận 1, Hà Nội, Việt Nam</p>
                 </div>
             </div>
@@ -190,6 +199,6 @@ $pageTitle = 'Liên hệ - ' . SITE_NAME;
         </div>
     </div>
     
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

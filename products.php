@@ -1,11 +1,12 @@
 <?php
 // products.php - Trang danh sách sản phẩm
 
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/Product.php';
-require_once 'models/Category.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/Product.php';
+require_once __DIR__ . '/models/Category.php';
+require_once __DIR__ . '/models/Rating.php';
 
 $productModel = new Product();
 $categoryModel = new Category();
@@ -17,6 +18,7 @@ $search = $_GET['search'] ?? '';
 $minPrice = $_GET['min_price'] ?? null;
 $maxPrice = $_GET['max_price'] ?? null;
 $sort = $_GET['sort'] ?? ''; // price_asc, price_desc, name_asc, name_desc
+$minRating = $_GET['min_rating'] ?? null;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $perPage = 12;
 
@@ -75,6 +77,15 @@ if ($sort) {
             default:
                 return 0;
         }
+    });
+}
+
+// Lọc theo rating
+if ($minRating) {
+    $ratingModel = new Rating();
+    $products = array_filter($products, function($product) use ($minRating, $ratingModel) {
+        $avgRating = $ratingModel->getAverageRating($product['id']);
+        return ($avgRating['avg_rating'] ?? 0) >= $minRating;
     });
 }
 
@@ -180,7 +191,7 @@ $categories = $categoryModel->getAllCategories();
     </style>
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
     
     <?php
     $breadcrumb = [
@@ -227,6 +238,18 @@ $categories = $categoryModel->getAllCategories();
                                 <span>-</span>
                                 <input type="number" name="max_price" placeholder="Đến" value="<?php echo $maxPrice; ?>">
                             </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Đánh giá tối thiểu</label>
+                            <select name="min_rating" class="form-control">
+                                <option value="">Tất cả</option>
+                                <option value="1" <?php echo $minRating === '1' ? 'selected' : ''; ?>>⭐ Từ 1 sao</option>
+                                <option value="2" <?php echo $minRating === '2' ? 'selected' : ''; ?>>⭐⭐ Từ 2 sao</option>
+                                <option value="3" <?php echo $minRating === '3' ? 'selected' : ''; ?>>⭐⭐⭐ Từ 3 sao</option>
+                                <option value="4" <?php echo $minRating === '4' ? 'selected' : ''; ?>>⭐⭐⭐⭐ Từ 4 sao</option>
+                                <option value="5" <?php echo $minRating === '5' ? 'selected' : ''; ?>>⭐⭐⭐⭐⭐ 5 sao</option>
+                            </select>
                         </div>
                         
                         <button type="submit" class="btn btn-primary btn-block btn-sm">
@@ -309,6 +332,15 @@ $categories = $categoryModel->getAllCategories();
                                     <?php endif; ?>
                                 </div>
                                 
+                                <div class="product-stock">
+                                    <i class="fas fa-box"></i> 
+                                    <?php if ($product['quantity'] > 0): ?>
+                                        <span class="stock-available">Còn <?php echo number_format($product['quantity']); ?> sản phẩm</span>
+                                    <?php else: ?>
+                                        <span class="stock-out">Hết hàng</span>
+                                    <?php endif; ?>
+                                </div>
+                                
                                 <div class="product-actions">
                                     <button class="btn btn-cart" onclick="addToCart(<?php echo $product['id']; ?>)">
                                         <i class="fas fa-shopping-cart"></i> Thêm vào giỏ
@@ -354,7 +386,7 @@ $categories = $categoryModel->getAllCategories();
         </div>
     </div>
     
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
     <script src="assets/js/cart.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

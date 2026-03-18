@@ -1,10 +1,10 @@
 <?php
 // news-detail.php - Trang chi tiết tin tức
 
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/News.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/News.php';
 
 $slug = $_GET['slug'] ?? '';
 
@@ -349,7 +349,7 @@ $pageTitle = htmlspecialchars($news['title']) . ' - ' . SITE_NAME;
 </head>
 <body>
     <!-- Header -->
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
 
     <!-- Breadcrumb -->
     <div class="breadcrumb">
@@ -465,7 +465,7 @@ $pageTitle = htmlspecialchars($news['title']) . ' - ' . SITE_NAME;
     </div>
 
     <!-- Footer -->
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 
     <script>
         function shareNews() {

@@ -1,11 +1,12 @@
 <?php
 // product-detail.php - Trang chi tiết sản phẩm
 
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/Product.php';
-require_once 'models/Comment.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/Product.php';
+require_once __DIR__ . '/models/Comment.php';
+require_once __DIR__ . '/models/Rating.php';
 
 $slug = $_GET['slug'] ?? '';
 
@@ -228,7 +229,7 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
     </style>
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
     
     <?php
     $breadcrumb = [
@@ -330,9 +331,9 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
                 <!-- Tabs -->
                 <div class="tabs">
                     <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="showTab('description')">Mô tả</button>
-                        <button class="tab-btn" onclick="showTab('specifications')">Thông số kỹ thuật</button>
-                        <button class="tab-btn" onclick="showTab('reviews')">Đánh giá (<?php echo $rating['total_reviews']; ?>)</button>
+                        <button class="tab-btn active" onclick="showTab(event, 'description')">Mô tả</button>
+                        <button class="tab-btn" onclick="showTab(event, 'specifications')">Thông số kỹ thuật</button>
+                        <button class="tab-btn" onclick="showTab(event, 'reviews')">Đánh giá (<?php echo $rating['total_reviews']; ?>)</button>
                         <button class="btn btn-cart" onclick="addToCart(<?php echo $product['id']; ?>, this)"> <i class="fas fa-shopping-cart"></i> Thêm vào giỏ</button>
                     </div>
                     
@@ -368,47 +369,7 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
                     
                     <div id="reviews" class="tab-content">
                         <div class="product-info-section">
-                            <h3>Đánh giá sản phẩm</h3>
-                            
-                            <?php if (isLoggedIn()): ?>
-                            <form method="POST" style="margin: 20px 0; padding: 20px; background: var(--light-color); border-radius: 5px;">
-                                <div class="form-group">
-                                    <label>Đánh giá của bạn</label>
-                                    <div>
-                                        <input type="radio" name="rating" value="5" required> ⭐⭐⭐⭐⭐
-                                        <input type="radio" name="rating" value="4"> ⭐⭐⭐⭐
-                                        <input type="radio" name="rating" value="3"> ⭐⭐⭐
-                                        <input type="radio" name="rating" value="2"> ⭐⭐
-                                        <input type="radio" name="rating" value="1"> ⭐
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <textarea name="content" class="form-control" placeholder="Nhận xét của bạn..." required></textarea>
-                                </div>
-                                <button type="submit" name="add_comment" class="btn btn-primary">Gửi đánh giá</button>
-                            </form>
-                            <?php else: ?>
-                            <p><a href="customer/login.php">Đăng nhập</a> để đánh giá sản phẩm</p>
-                            <?php endif; ?>
-                            
-                            <div class="comments-list">
-                                <?php foreach ($comments as $comment): ?>
-                                <div class="comment-item">
-                                    <div class="comment-header">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($comment['full_name'] ?? $comment['username']); ?></strong>
-                                            <?php echo renderStars($comment['rating'], 5); ?>
-                                        </div>
-                                        <span style="color: #666; font-size: 14px;"><?php echo timeAgo($comment['created_at']); ?></span>
-                                    </div>
-                                    <p><?php echo htmlspecialchars($comment['content']); ?></p>
-                                </div>
-                                <?php endforeach; ?>
-                                
-                                <?php if (empty($comments)): ?>
-                                <p style="text-align: center; color: #666; padding: 20px;">Chưa có đánh giá nào</p>
-                                <?php endif; ?>
-                            </div>
+                            <?php $product_id = $product['id']; include __DIR__ . '/includes/rating-widget.php'; ?>
                         </div>
                     </div>
                 </div>
@@ -442,38 +403,8 @@ $finalPrice = getFinalPrice($product['price'], $product['discount_price']);
         <?php endif; ?>
     </div>
     
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
     
-    <script>
-        function changeImage(img) {
-            document.getElementById('mainImage').src = img.src;
-            document.querySelectorAll('.thumbnail-images img').forEach(i => i.classList.remove('active'));
-            img.classList.add('active');
-        }
-        
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-        
-        function increaseQty() {
-            const input = document.getElementById('quantity');
-            const max = parseInt(input.max);
-            if (parseInt(input.value) < max) {
-                input.value = parseInt(input.value) + 1;
-            }
-        }
-        
-        function decreaseQty() {
-            const input = document.getElementById('quantity');
-            if (parseInt(input.value) > 1) {
-                input.value = parseInt(input.value) - 1;
-            }
-        }
-    </script>
     <script src="assets/js/cart.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

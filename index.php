@@ -1,13 +1,13 @@
 <?php
 // index.php - Trang chủ website
 
-require_once 'config/config.php';
-require_once 'includes/Database.php';
-require_once 'includes/functions.php';
-require_once 'models/Product.php';
-require_once 'models/Category.php';
-require_once 'models/News.php';
-require_once 'models/Banner.php';
+require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/Database.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/models/Product.php';
+require_once __DIR__ . '/models/Category.php';
+require_once __DIR__ . '/models/News.php';
+require_once __DIR__ . '/models/Banner.php';
 
 $productModel = new Product();
 $categoryModel = new Category();
@@ -36,7 +36,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
 </head>
 <body>
     <!-- Header -->
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
 
     <!-- Banner Slider -->
     <section class="banner-section">
@@ -107,6 +107,15 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                             <?php endif; ?>
                         </div>
                         
+                        <div class="product-stock">
+                            <i class="fas fa-box"></i> 
+                            <?php if ($product['quantity'] > 0): ?>
+                                <span class="stock-available">Còn <?php echo number_format($product['quantity']); ?> sản phẩm</span>
+                            <?php else: ?>
+                                <span class="stock-out">Hết hàng</span>
+                            <?php endif; ?>
+                        </div>
+                        
                         <div class="product-actions">
                             <button class="btn btn-cart" onclick="addToCart(<?php echo $product['id']; ?>)">
                                 <i class="fas fa-shopping-cart"></i> Thêm vào giỏ
@@ -156,6 +165,14 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                                 <span class="price-new"><?php echo number_format($product['price']); ?>đ</span>
                             <?php endif; ?>
                         </div>
+                        <div class="product-stock">
+                            <i class="fas fa-box"></i> 
+                            <?php if ($product['quantity'] > 0): ?>
+                                <span class="stock-available">Còn <?php echo number_format($product['quantity']); ?> sản phẩm</span>
+                            <?php else: ?>
+                                <span class="stock-out">Hết hàng</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="sold-count">
                             <i class="fas fa-check-circle"></i> Đã bán: <?php echo $product['sold_quantity']; ?>
                         </div>
@@ -193,6 +210,14 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
                         <div class="product-price">
                             <span class="price-old"><?php echo number_format($product['price']); ?>đ</span>
                             <span class="price-new"><?php echo number_format($product['discount_price']); ?>đ</span>
+                        </div>
+                        <div class="product-stock">
+                            <i class="fas fa-box"></i> 
+                            <?php if ($product['quantity'] > 0): ?>
+                                <span class="stock-available">Còn <?php echo number_format($product['quantity']); ?> sản phẩm</span>
+                            <?php else: ?>
+                                <span class="stock-out">Hết hàng</span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -240,7 +265,7 @@ $pageTitle = 'Trang chủ - ' . SITE_NAME;
     </div>
 
     <!-- Footer -->
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 
     <script src="assets/js/main.js?v=<?php echo time(); ?>"></script>
     <script src="assets/js/cart.js?v=<?php echo time(); ?>"></script>
